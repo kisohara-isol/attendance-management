@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>勤務追加画面</title>
+</head>
+<body>
+
+    <div>
+        <h2>勤務追加</h2>
+        <p>値を入力してください</p>
+        
+        <form th:action="@{/attendance/management/workconfirm}" method="post">
+            <div>
+                <label>日付：</label>
+                <input type="text">
+                <span>(YYYYMMDD で入力)</span>
+                <button type="button">今日の日付を入力</button>
+            </div>
+            
+            <div>
+                <label>出勤時間：</label>
+                <input type="text">
+                <span>(HHMM で入力、または「休み」)</span>
+            </div>
+            
+            <div>
+                <label>退勤時間：</label>
+                <input type="text">
+                <span>(HHMM で入力)</span>
+            </div>
+            
+            <div>
+                <label>備考：</label>
+                <input type="text">
+            </div>
+            
+            <div>
+                <button type="submit">確認</button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

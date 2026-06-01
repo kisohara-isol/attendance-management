@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>ログイン画面</title>
+<link rel="stylesheet" type="text/css" href="/css/style.css"></link>
+<meta charset="utf-8" />
+</head>
+
+<body>
+	<div><br>ログイン画面<br><br><br></div>
+	<hr align=center color=black>
+	<div><br>ログインIDとパスワードを入力してください。<br><br></div>
+	<form th:action="@{/attendance/management/worktable}" th:object="${loginRequest}" th:method="post">
+		<div>
+			ログインID：<input type="text" name="loginId" size="20" /><br>
+			パスワード：<input type="text" name="password" size="20" /><br>
+			<br>
+			<input type="submit" value="ログイン">
+			<br>
+			<div th:if="${message}">
+				<div><font color=red>[[${message}]]</font></div>
+			</div>
+		</div>
+	</form>
+
+</body>
+</html>

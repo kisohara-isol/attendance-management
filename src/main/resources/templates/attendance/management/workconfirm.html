@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>確認画面</title>
+</head>
+<body>
+
+    <div>
+        <h2>勤務追加</h2>
+        <p>「追加」ボタンを押したら、下記内容で登録されます</p>
+        
+        <div>
+            <span>日付：</span>
+            <span>2025/06/02</span>
+        </div>
+        
+        <div>
+            <span>出勤時間：</span>
+            <span>09:20</span>
+        </div>
+        
+        <div>
+            <span>退勤時間：</span>
+            <span>18:35</span>
+        </div>
+        
+        <div>
+            <span>備考：</span>
+            <span></span>
+        </div>
+        
+        <div>
+            <form th:action="@{/register}" method="post">
+                <button type="submit">追加</button>
+            </form>
+            
+            <a th:href="@{/add}">値を修正する</a>
+        </div>
+    </div>
+
+</body>
+</html>

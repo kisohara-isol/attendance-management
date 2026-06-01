@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>勤務表一覧画面</title>
+    </head>
+<body>
+
+    <div>
+        <h2>勤務表</h2>
+        
+        <div>
+            <span>社員名：</span>
+            <span>志村智之</span>
+        </div>
+        
+        <div>
+            <span>対象年月：</span>
+            <input type="text"> 年
+            <input type="text"> 月
+            <button type="button">表示</button>
+        </div>
+        
+        <hr> <div>
+            <a th:href="@{/attendance/management/workinput}">勤務を追加</a>
+        </div>
+    </div>
+
+</body>
+</html>
