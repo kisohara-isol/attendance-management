@@ -24,10 +24,6 @@ public class LogUtil {
 		logger.info(message, args);
 	}
 
-	public static void warn(String message, Object... args) {
-		logger.warn(message, args);
-	}
-
 	public static void debug(String message, Object... args) {
 		logger.debug(message, args);
 	}
@@ -35,6 +31,25 @@ public class LogUtil {
 	// =================================================================
 	// エラーコード（E0001など）を指定してログを出すための専用メソッド
 	// =================================================================
+	public static void warn(String errorCode, Object... args) {
+		String message = errorCode;
+
+		// messages.propertiesから文言の取得を試みる
+		if (messageSource != null) {
+			try {
+				String rawMessage = messageSource.getMessage(errorCode, null, Locale.getDefault());
+				// ログの見やすさのために「E0001: ログインIDが...」という形式にする
+				message = errorCode + ": " + rawMessage;
+			} catch (Exception e) {
+				// 万が一プロパティファイルにコードが登録されていなかった場合のセーフティ
+				message = errorCode + " (未定義のエラーコードです)";
+			}
+		}
+
+		// 最終的なログ出力
+		logger.warn(message, args);
+	}
+	
 	public static void error(String errorCode, Object... args) {
 		String message = errorCode;
 
