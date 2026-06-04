@@ -7,7 +7,8 @@ import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
-/**勤務表のリストを取得するMapperクラス
+/**
+ * 勤務表のリストを取得するMapperクラス
  * @author Hagiwara
  */
 @Mapper
