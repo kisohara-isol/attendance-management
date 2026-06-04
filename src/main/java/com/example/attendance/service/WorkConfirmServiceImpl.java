@@ -4,8 +4,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,11 +53,7 @@ public class WorkConfirmServiceImpl implements WorkConfirmService {
 	 */
 	@Override
 	@Transactional // ⭕ データベースへのインサート処理を伴うため、トランザクション管理を行います
-	public void insertAttendanceData(CreateWorkRequest request, HttpSession session) {
-
-		// セッションから社員IDを取得
-		ShainData shain = (ShainData) session.getAttribute("loginShain");
-
+	public void insertAttendanceData(CreateWorkRequest request, ShainData shain) {
 		// 出勤日と備考を取得
 		LocalDate workDay = request.getWorkDay();
 		String note = request.getNote();

@@ -1,8 +1,7 @@
 package com.example.attendance.service;
 
-import jakarta.servlet.http.HttpSession;
-
 import com.example.attendance.dto.CreateWorkRequest;
+import com.example.attendance.entity.ShainData;
 
 /**
  * 勤務登録確認画面におけるビジネスロジックを定義するサービスインターフェース。
@@ -28,6 +27,6 @@ public interface WorkConfirmService {
 	 * @param createWorkRequest 勤務登録画面から送信された入力値（日付、出退勤時間、備考など）が格納されたDTO
 	 * @param session           ログインユーザーのセッション情報を管理するHTTPセッションオブジェクト
 	 */
-	void insertAttendanceData(CreateWorkRequest createWorkRequest, HttpSession session);
+	void insertAttendanceData(CreateWorkRequest createWorkRequest, ShainData shain);
 
 }

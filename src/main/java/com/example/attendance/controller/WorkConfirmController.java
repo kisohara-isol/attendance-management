@@ -114,8 +114,13 @@ public class WorkConfirmController {
 	@PostMapping("/attendance/management/workconfirm")
 	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session) {
 
+		
+		// セッションから社員IDを取得
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
+		
 		// サービス層を呼び出してDBへの登録を実行
-		workConfirmService.insertAttendanceData(createWorkRequest, session);
+		
+		workConfirmService.insertAttendanceData(createWorkRequest, shain);
 
 		// ⭕ 登録処理（POST）の後は、ブラウザの「戻る」や「更新」による二重登録を防ぐため、
 		// テンプレートパスを直接返すのではなく「redirect:」を使用するのが一般的なWeb開発のベストプラクティスです。
