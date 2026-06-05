@@ -1,5 +1,7 @@
 package com.example.attendance.service;
 
+import com.example.attendance.entity.ShainData;
+
 /**
  * ログイン認証に関するビジネスロジックを管理するサービスインターフェース。
  * * @author Soeda
@@ -16,4 +18,6 @@ public interface LoginService {
 	int loginJudge(String loginId, String password);
 
 	int getRemainingAttempts(String loginId);
+	
+	ShainData getShainById(String loginId);
 }

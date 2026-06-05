@@ -7,8 +7,6 @@ package com.example.attendance.service;
 import java.util.HashMap;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -23,9 +21,6 @@ public class LoginServiceImpl implements LoginService {
 
 	@Autowired
 	private ShainDataMapper shainDataMapper;
-
-	@Autowired
-	private HttpSession session;
 
 	/**
 	 * ログイン時失敗した回数をアカウントごとに格納するmap
@@ -48,7 +43,7 @@ public class LoginServiceImpl implements LoginService {
 		try {
 
 			// 1. まず入力されたIDで社員が存在するか確認
-			shain = shainDataMapper.selectShainById(loginId);
+			shain = getShainById(loginId);
 
 		} catch (DataAccessException e) {
 
@@ -69,8 +64,6 @@ public class LoginServiceImpl implements LoginService {
 		if (shain.getPassword().equals(password)) {
 			// ログイン成功
 			errorMap.clear();//ログイン成功時errorMapを完全にリセット
-
-			session.setAttribute("loginShain", shain);
 
 			return 1;
 		} else {
@@ -104,5 +97,16 @@ public class LoginServiceImpl implements LoginService {
 		//Mapから失敗回数を取得、一度も間違えていなければ0を設定
 		int errorCounts = errorMap.getOrDefault(loginId, 0);
 		return 3 - errorCounts;
+	}
+
+	
+	/**
+	 *ログインIDから社員情報を取得する。
+	 */
+	@Override
+	public ShainData getShainById(String loginId) {
+
+		return shainDataMapper.selectShainById(loginId);
+
 	}
 }

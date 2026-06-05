@@ -2,6 +2,8 @@ package com.example.attendance.controller;
 
 import java.util.Locale;
 
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import com.example.attendance.dto.LoginRequest;
+import com.example.attendance.entity.ShainData;
 import com.example.attendance.service.LoginService;
 import com.example.attendance.util.LogUtil;
 
@@ -31,6 +34,9 @@ public class LoginController {
 	 */
 	@Autowired
 	private LoginService loginService;
+
+	@Autowired
+	private HttpSession session;
 
 	/**
 	 * ログイン画面の初期表示を行います。
@@ -57,7 +63,7 @@ public class LoginController {
 	 * <li>{@code 2} (既ロック): 警告ログ（{@code W10005}）を出力し、停止済みメッセージを設定して画面へ戻します。</li>
 	 * <li>{@code 3} (今ロック): 警告ログ（{@code W10004}）を出力し、3回失敗による新規ロックメッセージを設定して画面へ戻します。</li>
 	 * <li>{@code 4} (通常失敗):</b>警告ログ ({@code W10006})を出力し、入力されたIDが存在しないメッセージを設定。</li>
-	 * <li>{@code5} (DB接続失敗):</b>エラーログ({@code E10001})を出力し、何らかのエラーでDBへ接続できなかったメッセージを設定。</li>
+	 * <li>{@code 5} (DB接続失敗):</b>エラーログ({@code E10001})を出力し、何らかのエラーでDBへ接続できなかったメッセージを設定。</li>
 	 * <li>{@code 0} (通常失敗 / 初期値): ログイン失敗の中身をさらに以下の3パターンに分岐して処理します。
 	 * <ul>
 	 * <li><b>パターンA（ID未入力）:</b> 警告ログ（{@code W10001}）を出力し、ID入力を促します。</li>
@@ -78,6 +84,13 @@ public class LoginController {
 	public String login(@ModelAttribute("loginRequest") LoginRequest loginRequest, Model model, Locale locale,
 			BindingResult bindingResult) {
 
+		if (loginRequest.getLoginId() == null) {
+
+			LogUtil.warn("W10001");
+			model.addAttribute("errorMessage", "IDを入力してください");
+			return "/attendance/management/login";
+		}
+
 		// ServiceにIDとパスワードを渡し、結果のコードを受け取る
 		int statusCode = loginService.loginJudge(loginRequest.getLoginId(), loginRequest.getPassword());
 
@@ -86,6 +99,8 @@ public class LoginController {
 
 		switch (statusCode) {
 		case 1:
+			ShainData loginShain = loginService.getShainById(loginRequest.getLoginId());
+			session.setAttribute("loginShain", loginShain);
 			// ログイン成功
 			return "redirect:/attendance/management/worktable";
 
@@ -114,26 +129,23 @@ public class LoginController {
 			return "/attendance/management/login";
 
 		case 0:
+
 		default: // ⭕ ログイン失敗（case 0）の中で、未入力と間違いパターンを切り分ける
 
 			int remaining = loginService.getRemainingAttempts(loginRequest.getLoginId());
 
-			// パターンA：IDが何も書かれていない状態のエラー
-			if (loginRequest.getLoginId() == null || loginRequest.getLoginId().trim().isEmpty()) {
-				LogUtil.warn("W10001");
-
-				// パターンB：passwordが何も書かれていない状態のエラー
-			} else if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+			if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+				// パターンA：passwordが何も書かれていない状態のエラー
 				LogUtil.warn("W10002");
 				model.addAttribute("errorMessage", "パスワードを入力してください。（残り: " + remaining + "回）");
 
-				// パターンC：入力して間違えているパターン
 			} else {
+				// パターンB：入力して間違えているパターン
 				LogUtil.warn("W10003");
 				model.addAttribute("errorMessage", "ログインIDまたはパスワードが間違っています。（残り: " + remaining + "回）");
 			}
 
-			return "attendance/management/login";
+			return "/attendance/management/login";
 		}
 	}
 }

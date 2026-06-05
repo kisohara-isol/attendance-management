@@ -4,8 +4,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +17,7 @@ import com.example.attendance.repository.ShainDataMapper;
  * <p>
  * コントローラーから受け取ったリクエストデータおよびセッション情報を基に、
  * データの検証・補正（型変換やデフォルト値の設定）を行い、マッパーを介してデータベースへ登録します。
+ * @author Soeda
  * </p>
  */
 @Service // ⭕ Springのサービスとして認識させるために必須のアノテーションです
@@ -50,15 +49,11 @@ public class WorkConfirmServiceImpl implements WorkConfirmService {
 	 * @param request 勤務登録画面から送信された入力値（日付、出退勤時間、備考など）が格納されたDTO
 	 * @param session ログインユーザーのセッション情報を管理するHTTPセッションオブジェクト
 	 * @throws java.time.format.DateTimeParseException 時刻文字列のフォーマットが不正な場合
-	 * @author Soeda
+	 * 
 	 */
 	@Override
 	@Transactional // ⭕ データベースへのインサート処理を伴うため、トランザクション管理を行います
-	public void insertAttendanceData(CreateWorkRequest request, HttpSession session) {
-
-		// セッションから社員IDを取得
-		ShainData shain = (ShainData) session.getAttribute("loginShain");
-
+	public void insertAttendanceData(CreateWorkRequest request, ShainData shain) {
 		// 出勤日と備考を取得
 		LocalDate workDay = request.getWorkDay();
 		String note = request.getNote();
