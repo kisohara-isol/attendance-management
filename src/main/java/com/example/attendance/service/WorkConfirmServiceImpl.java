@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class WorkConfirmServiceImpl implements WorkConfirmService {
 	 */
 	@Override
 	@Transactional // ⭕ データベースへのインサート処理を伴うため、トランザクション管理を行います
-	public void insertAttendanceData(CreateWorkRequest request, ShainData shain) {
+	public void insertAttendanceData(CreateWorkRequest request, ShainData shain) throws DataAccessException{
 		// 出勤日と備考を取得
 		LocalDate workDay = request.getWorkDay();
 		String note = request.getNote();
@@ -80,5 +81,6 @@ public class WorkConfirmServiceImpl implements WorkConfirmService {
 
 		// マッパーを呼び出してデータベースに登録
 		shainDataMapper.insertAttendanceData(shain.getShainId(), workDay, startTime, endTime, note);
+		
 	}
 }

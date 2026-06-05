@@ -1,5 +1,7 @@
 package com.example.attendance.service;
 
+import org.springframework.dao.DataAccessException;
+
 import com.example.attendance.dto.CreateWorkRequest;
 import com.example.attendance.entity.ShainData;
 
@@ -27,6 +29,6 @@ public interface WorkConfirmService {
 	 * @param createWorkRequest 勤務登録画面から送信された入力値（日付、出退勤時間、備考など）が格納されたDTO
 	 * @param session           ログインユーザーのセッション情報を管理するHTTPセッションオブジェクト
 	 */
-	void insertAttendanceData(CreateWorkRequest createWorkRequest, ShainData shain);
+	void insertAttendanceData(CreateWorkRequest createWorkRequest, ShainData shain) throws DataAccessException;
 
 }

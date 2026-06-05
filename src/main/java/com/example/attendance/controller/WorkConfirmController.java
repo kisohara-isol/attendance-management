@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -114,13 +115,24 @@ public class WorkConfirmController {
 	@PostMapping("/attendance/management/workconfirm")
 	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session) {
 
-		
 		// セッションから社員IDを取得
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
-		
+
 		// サービス層を呼び出してDBへの登録を実行
-		
-		workConfirmService.insertAttendanceData(createWorkRequest, shain);
+		try {
+
+			workConfirmService.insertAttendanceData(createWorkRequest, shain);
+
+		} catch (DataAccessException e) {
+
+			//何かしらのエラーでDBに接続できなかった場合
+			LogUtil.error("E10001");
+
+			model.addAttribute("errorMessage", "DB接続時にエラーが発生しました。時間を空けて再度実行してください。");
+
+			return "attendance/management/confirm";
+
+		}
 
 		// ⭕ 登録処理（POST）の後は、ブラウザの「戻る」や「更新」による二重登録を防ぐため、
 		// テンプレートパスを直接返すのではなく「redirect:」を使用するのが一般的なWeb開発のベストプラクティスです。
