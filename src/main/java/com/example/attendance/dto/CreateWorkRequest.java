@@ -29,7 +29,7 @@ public class CreateWorkRequest {
 	
 	/**「出勤時間(HHMM)」もしくは文字列「休み」*/
 	@NotEmpty(message = "{W30002}")
-	@Pattern(regexp="^(([0,1][0-9]|2[0-4])[0-5][0-9]|休み)?$", message = "{W30004}") //許容する値は「[0-24][0-59]」or「休み」or「空白」。三つめはNotEmptyのほうに引っかかる
+	@Pattern(regexp="^(([0,1][0-9]|2[0-3])[0-5][0-9]|休み)?$", message = "{W30004}") //許容する値は「[0-24][0-59]」or「休み」or「空白」。三つめはNotEmptyのほうに引っかかる
 	private String startTime;
 	
 	/**「退勤時間(HHMM)」もしくはnull*/
