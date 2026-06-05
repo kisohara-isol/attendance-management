@@ -1,9 +1,6 @@
 package com.example.attendance.controller;
 
-import static java.util.Map.*;
-
 import java.util.Collections;
-import java.util.Map;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -17,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.CreateWorkRequest;
+import com.example.attendance.util.CreateWorkRequestFeilds;
 import com.example.attendance.util.LogUtil;
 
 /**
@@ -25,43 +23,6 @@ import com.example.attendance.util.LogUtil;
  */
 @Controller
 public class WorkInputController {
-
-	/**
-	 * dtoクラス"CreateWorkRequest"に存在するフィールドの列挙子。<br>
-	 * 各列挙子は、自身の表すフィールドが持つアノテーションを、{アノテーション名,エラーコード}のMapで保持する
-	 */
-	private enum CreateWorkRequestFileds {
-		/**出勤日(workDay)*/
-		WORK_DAY(entry("typeMismatch", "W30003"), entry("NotNull", "W30001")),
-		/**出勤時間(startTime)*/
-		START_TIME(entry("NotEmpty", "W30002"), entry("Pattern", "W30004")),
-		/**退勤時間(endTIme)*/
-		END_TIME(entry("typeMismatch", "W30006"), entry("HolidayCheck", "W30005")),
-		/**備考(note)*/
-		NOTE();
-
-		/**列挙子が持つ、{アノテーション名,エラーコード}のmap*/
-		private Map<String, String> annotations;
-
-		/**コンストラクタ
-		 * @param entries 各フィールドのアノテーションとエラーコード
-		 */
-		private CreateWorkRequestFileds(Map.Entry<String, String>... entries) {
-			this.annotations = Map.ofEntries(entries);
-		}
-
-		/**
-		 * 引数で指定されたアノテーション名に対応するエラーコードを返す。
-		 * @param annotationType アノテーション名
-		 * @return エラーコード。対応するアノテーションが存在しない場合はnull
-		 */
-		private String getErrorCode(String annotationType) {
-			if (this.annotations.size() == 0) {
-				return null;
-			}
-			return this.annotations.get(annotationType);
-		}
-	}
 
 	/**
 	 * /attendance/management/workinputの描写メソッド
@@ -109,11 +70,11 @@ public class WorkInputController {
 		if (result.hasErrors()) {
 			result.getFieldErrors().stream().forEach(x -> {
 				//フィールド名に対応する列挙子を取得
-				CreateWorkRequestFileds feild = switch (x.getField()) {
-				case "workDay" -> CreateWorkRequestFileds.WORK_DAY;
-				case "startTime" -> CreateWorkRequestFileds.START_TIME;
-				case "endTime" -> CreateWorkRequestFileds.END_TIME;
-				case "note" -> CreateWorkRequestFileds.NOTE;
+				CreateWorkRequestFeilds feild = switch (x.getField()) {
+				case "workDay" -> CreateWorkRequestFeilds.WORK_DAY;
+				case "startTime" -> CreateWorkRequestFeilds.START_TIME;
+				case "endTime" -> CreateWorkRequestFeilds.END_TIME;
+				case "note" -> CreateWorkRequestFeilds.NOTE;
 				default -> throw new IllegalArgumentException("Unexpected value: " + x.getField());
 				};
 				//アノテーションを取得
