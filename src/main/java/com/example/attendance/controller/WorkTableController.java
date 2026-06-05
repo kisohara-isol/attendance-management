@@ -1,5 +1,6 @@
 package com.example.attendance.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.servlet.http.HttpSession;
@@ -50,7 +51,14 @@ public class WorkTableController {
 	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest request) {
 
 		LogUtil.info("勤務表照会ページに飛びました。");
-
+		
+		LocalDate ld = LocalDate.now();
+		int year = ld.getYear();
+		int month = ld.getMonthValue();
+		
+		request.setWorkYear(String.valueOf(year));
+		request.setWorkMonth(String.valueOf(month));
+		
 		model.addAttribute("WorkTableRequest", request);
 
 		// セッションからユーザー情報を取得・反映

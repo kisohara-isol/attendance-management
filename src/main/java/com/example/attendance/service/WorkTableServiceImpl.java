@@ -21,6 +21,15 @@ import com.example.attendance.entity.AttendanceData;
 import com.example.attendance.repository.WorkTableMapper;
 import com.example.attendance.util.LogUtil;
 
+/**
+ * 勤務表に関する業務ロジックを提供するサービス実装クラスです。
+ * <p>
+ * データベースから取得した生の勤怠データを基に、画面表示や集計に適した形式
+ * （曜日、フォーマット済み日付、実労働時間、残業時間など）への加工・計算を行います。
+ * </p>
+ *
+ * @author Hagiwara
+ */
 @Service
 public class WorkTableServiceImpl implements WorkTableService {
 

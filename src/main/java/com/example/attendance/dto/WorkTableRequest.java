@@ -11,7 +11,7 @@ import lombok.Data;
  * アノテーションを付与することで、Bean Validation（未入力チェックなど）が自動的に実行されます。
  * </p>
  *
- * @author hagiwara
+ * @author Hagiwara
  */
 @Data
 public class WorkTableRequest {
