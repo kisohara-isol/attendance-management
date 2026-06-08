@@ -1,43 +1,130 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-    <meta charset="UTF-8">
-    <title>確認画面</title>
+	<meta charset="UTF-8">
+	<title>確認画面</title>
+	<meta name="author" content="Soeda">
+	<style>
+		.login-container {
+			margin: 200px 200px;
+			padding: 30px 30px 30px 100px;
+			font-family: "Helvetica Neue", Arial, sans-serif;
+		}
+
+
+		.form-row {
+			display: flex;
+			align-items: center;
+			margin-bottom: 30px;
+			margin-left: 0px;
+		}
+
+		/* 各行の「最初の文字（日付：、出勤時間：など）」の横幅を固定して縦一列に並べる設定 */
+		.form-row span:first-child {
+			width: 120px;
+			display: inline-block;
+
+		}
+
+		.form-label {
+			display: inline-block;
+		}
+
+		.submit-btn {
+			/* ⭕ ボタンの横幅を文字が綺麗に収まるサイズに微調整（15%だと小さすぎる場合があるため） */
+			padding: 10px 40px;
+			background-color: #007bff;
+			color: rgb(255, 255, 255);
+			/* ⭕ 文字色を白にして見やすくしました */
+			border: none;
+			border-radius: 4px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+
+		/* ボタンとリンクを横並びにするためのCSS */
+		.action-group {
+			display: flex;
+			/* ボタンとリンクを横並びにする */
+			align-items: center;
+			/* 上下の高さを真ん中で揃える */
+			gap: 60px;
+			/* ⭕ ボタンとリンクの間に20pxの隙間をあける */
+			margin-top: 30px;
+			/* 備考欄との間に少し広めの空白を作る */
+		}
+
+		/* 修正するリンクの見た目の微調整 */
+		.back-link {
+			color: #007bff;
+			text-decoration: none;
+			/* 下線を消す */
+		}
+
+		.back-link:hover {
+			text-decoration: underline;
+			/* マウスを乗せたら下線を出す */
+		}
+
+
+		.error-message {
+			color: #dc3545;
+			background-color: #f8d7da;
+			border: 1px solid #f5c6cb;
+			padding: 10px;
+			border-radius: 4px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+	</style>
 </head>
+
 <body>
 
-    <div>
-        <h2>勤務追加</h2>
-        <p>「追加」ボタンを押したら、下記内容で登録されます</p>
-        
-        <div>
-            <span>日付：</span>
-            <span>2025/06/02</span>
-        </div>
-        
-        <div>
-            <span>出勤時間：</span>
-            <span>09:20</span>
-        </div>
-        
-        <div>
-            <span>退勤時間：</span>
-            <span>18:35</span>
-        </div>
-        
-        <div>
-            <span>備考：</span>
-            <span></span>
-        </div>
-        
-        <div>
-            <form th:action="@{/register}" method="post">
-                <button type="submit">追加</button>
-            </form>
-            
-            <a th:href="@{/add}">値を修正する</a>
-        </div>
-    </div>
+	<div class="login-container">
+		<h2>勤務追加</h2>
+		<p>「追加」ボタンを押したら、下記内容で登録されます</p>
 
+		<div class="form-row">
+			<span>日付：</span>
+			<span th:text="${workDay}"></span>
+		</div>
+
+		<div class="form-row">
+			<span class="form-label">出勤時間：</span>
+			<span th:text="${startTime}"></span>
+		</div>
+
+		<div class="form-row">
+			<span>退勤時間：</span>
+			<span th:text="${endTime}"></span>
+		</div>
+
+		<div class="form-row">
+			<span>備考：</span>
+			<span th:text="${note}"></span>
+		</div>
+
+		<div th:if="${errorMessage}">
+			<span style="color: red;" th:text="${errorMessage}"></span>
+		</div>
+
+		<div class="action-group">
+			<form th:action="@{/attendance/management/workconfirm}" th:object="${createWorkRequest}" method="post">
+
+				<input type="hidden" name="workDay" th:value="${createWorkRequest.workDay}" />
+				<input type="hidden" name="startTime" th:value="${createWorkRequest.startTime}" />
+				<input type="hidden" name="endTime" th:value="${createWorkRequest.endTime}" />
+				<input type="hidden" name="note" th:value="${createWorkRequest.note}" />
+
+				<button type="submit">追加（登録確定）</button>
+			</form>
+
+			<a th:href="@{/attendance/management/workinput}" class="back-link">値を修正する</a>
+		</div>
+
+	</div>
 </body>
+
 </html>

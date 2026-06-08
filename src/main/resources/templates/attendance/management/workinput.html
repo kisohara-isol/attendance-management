@@ -1,45 +1,99 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-    <meta charset="UTF-8">
-    <title>勤務追加画面</title>
+	<meta charset="UTF-8" name="author" content="kato">
+	<title>勤務追加画面</title>
+	<script> //利用するとyyyyMMdd形式で日付を取得するプログラム。たぶんjavaScript。
+		function getToday() {
+			const today = new Date();
+			document.getElementById("workDay").value = today
+				.toLocaleDateString("ja-JP", {year: "numeric", month: "2-digit", day: "2-digit"}) //yyyy/mm/ddで取得
+				.replaceAll('/', ''); //スラッシュを削除
+		}
+	</script>
+	<style>
+		/*全体のレイアウト*/
+		.display-container {
+			margin: 100px 100px;
+			padding: 30px 30px 30px 100px;
+			font-family: "Helvetica Neue", Arial, sans-serif;
+		}
+
+		.form-row {
+
+			display: flex;
+			align-items: center;
+			margin-bottom: 20px;
+			margin-left: 0px;
+			flex-wrap: wrap; 
+			gap: 12px;
+		}
+
+		/* 各行の「最初の文字（日付：、出勤時間：など）」の横幅を固定して縦一列に並べる設定 */
+		.form-row label:first-of-type {
+			width: 100px;
+			display: inline-block;
+
+		}
+
+		.error-message {
+			width: 100%;
+			color: red;
+			font-size: 12px;
+		}
+	</style>
 </head>
+
 <body>
 
-    <div>
-        <h2>勤務追加</h2>
-        <p>値を入力してください</p>
-        
-        <form th:action="@{/attendance/management/workconfirm}" method="post">
-            <div>
-                <label>日付：</label>
-                <input type="text">
-                <span>(YYYYMMDD で入力)</span>
-                <button type="button">今日の日付を入力</button>
-            </div>
-            
-            <div>
-                <label>出勤時間：</label>
-                <input type="text">
-                <span>(HHMM で入力、または「休み」)</span>
-            </div>
-            
-            <div>
-                <label>退勤時間：</label>
-                <input type="text">
-                <span>(HHMM で入力)</span>
-            </div>
-            
-            <div>
-                <label>備考：</label>
-                <input type="text">
-            </div>
-            
-            <div>
-                <button type="submit">確認</button>
-            </div>
-        </form>
-    </div>
+	<div class="display-container">
+		<h2>勤務追加</h2>
+		<p>値を入力してください</p>
+
+		<form th:action="@{/attendance/management/workinput}" th:object="${createWorkRequest}" method="post">
+			<div class="form-row">
+				<label>日付：</label>
+				<input type="text" th:field="*{workDay}" />
+				<span>(YYYYMMDD で入力)</span>
+				<button type="button" onclick="getToday()">今日の日付を入力</button>
+				<div class="error-message">
+					<th:block th:if="${#fields.hasErrors('workDay')}" th:errors="*{workDay}"></th:block>
+				</div>
+			</div>
+
+			<div class="form-row">
+				<label>出勤時間：</label>
+				<input type="text" th:field="*{startTime}">
+				<span>(HHMM で入力、または「休み」)</span>
+				<div class="error-message">
+					<th:block th:if="${#fields.hasErrors('startTime')}" th:errors="*{startTime}"></th:block>
+				</div>
+			</div>
+
+			<div class="form-row">
+				<label>退勤時間：</label>
+				<input type="text" th:field="*{endTime}">
+				<span>(HHMM で入力、休みの場合は空欄)</span>
+				<div class="error-message">
+					<th:block th:if="${#fields.hasErrors('endTime')}" th:errors="*{endTime}"></th:block>
+				</div>
+			</div>
+
+			<div class="form-row">
+				<label>備考：</label>
+				<input type="text" th:field="*{note}">
+				<div class="error-message">
+					<th:block th:if="${#fields.hasErrors('note')}" th:errors="*{note}"></th:block>
+				</div>
+			</div>
+
+			<div >
+				<button type="submit">確認</button>
+			</div>
+		</form>
+	</div>
 
 </body>
+
 </html>
