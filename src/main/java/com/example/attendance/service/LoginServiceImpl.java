@@ -44,6 +44,7 @@ public class LoginServiceImpl implements LoginService {
 
 			// 1. まず入力されたIDで社員が存在するか確認
 			shain = getShainById(loginId);
+			//shainDataMapper.selectShainDataがないため実際はIDとパスワードセットで検索は行えていない。
 
 		} catch (DataAccessException e) {
 

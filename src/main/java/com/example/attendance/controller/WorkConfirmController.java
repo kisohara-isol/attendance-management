@@ -113,10 +113,19 @@ public class WorkConfirmController {
 	 * @return 勤務表画面へのリダイレクト指示 ({@code "redirect:/attendance/management/worktable"})
 	 */
 	@PostMapping("/attendance/management/workconfirm")
-	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session) {
+	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session,RedirectAttributes redirectAttributes) {
 
 		// セッションから社員IDを取得
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
+		
+		// 各コントローラーのセッション切れの処理部分
+				if (session == null || shain == null) {
+					LogUtil.warn("W99999");
+
+					redirectAttributes.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
+
+					return "redirect:/attendance/management/login"; // 最初のページへ
+				}
 
 		// サービス層を呼び出してDBへの登録を実行
 		try {
@@ -130,7 +139,7 @@ public class WorkConfirmController {
 
 			model.addAttribute("errorMessage", "DB接続時にエラーが発生しました。時間を空けて再度実行してください。");
 
-			return "attendance/management/confirm";
+			return "attendance/management/workconfirm";
 
 		}
 

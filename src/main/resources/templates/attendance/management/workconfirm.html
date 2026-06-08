@@ -66,6 +66,17 @@
 			text-decoration: underline;
 			/* マウスを乗せたら下線を出す */
 		}
+
+
+		.error-message {
+			color: #dc3545;
+			background-color: #f8d7da;
+			border: 1px solid #f5c6cb;
+			padding: 10px;
+			border-radius: 4px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
 	</style>
 </head>
 
@@ -95,6 +106,10 @@
 			<span th:text="${note}"></span>
 		</div>
 
+		<div th:if="${errorMessage}">
+			<span style="color: red;" th:text="${errorMessage}"></span>
+		</div>
+
 		<div class="action-group">
 			<form th:action="@{/attendance/management/workconfirm}" th:object="${createWorkRequest}" method="post">
 
@@ -108,8 +123,8 @@
 
 			<a th:href="@{/attendance/management/workinput}" class="back-link">値を修正する</a>
 		</div>
-	</div>
 
+	</div>
 </body>
 
 </html>
