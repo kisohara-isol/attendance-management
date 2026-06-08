@@ -116,7 +116,8 @@ public class WorkTableController {
 			// ログに流す
 			if (errorMessage.contains("年を入力してください。")) {
 				LogUtil.warn("W20001");
-			} else if (errorMessage.contains("月を入力してください。")) {
+			}
+			if (errorMessage.contains("月を入力してください。")) {
 				LogUtil.warn("W20002");
 			}
 			return "attendance/management/worktable";
