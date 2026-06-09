@@ -13,8 +13,6 @@ import com.example.attendance.entity.ShainData;
 
 /**
  * {@link ShainData} および勤怠データに関するデータベース操作を行うマッパーインターフェース。
- * <p>
- * MyBatisのアノテーションを用いて、{@x.code shain_data} テーブルおよび
  * @author Soeda
  * </p>
  */
@@ -70,4 +68,12 @@ public interface ShainDataMapper {
 	 */
 	@Update("UPDATE shain_data SET stop_flg = #{stopFlg} WHERE login_id = #{loginId}")
 	void updateShainData(ShainData shain);
+	
+	/**
+	 * 引数で渡された社員IDに対応するアカウントのstop_flgを0にリセット(アップデート)します。
+	 * @param shainId 対象となる社員ID
+	 * @return 更新に成功した数<br>正しく実行されれば1であることが期待される
+	 */
+	@Update("UPDATE shain_data SET stop_flg = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
+	int resetStopFlugByShainId(@Param("shainId") int shainId);
 }
