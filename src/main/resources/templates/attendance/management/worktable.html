@@ -142,7 +142,7 @@
 			<td th:text="${work.workDay}"></td>
 			<td th:text="${work.dayOfWeek}" th:style="${work.breakDay} ? 'color: red;' : 'color: black;'"></td>
 			<td th:text="${work.breakDay} ? '休み' : ${work.startTime}"></td>
-			<td th:text="${work.endTime}"></td>
+			<td th:text="${work.breakDay} ? null : ${work.endTime}"></td>
 			<td th:text="${work.minutes > 480 ? work.overTime : null}"></td>
 			<td th:text="${work.note}"></td>
 		</tr>
