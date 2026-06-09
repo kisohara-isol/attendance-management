@@ -106,11 +106,9 @@ public class WorkTableServiceImpl implements WorkTableService {
 			LocalTime breakTime = LocalTime.of(00, 00);
 			if (startTime.equals(breakTime) && endTime.equals(breakTime)) {
 				ad.setBreakDay(true);
-				// そうでないときは表示させる
-			} else {
-				ad.setStartTime(st.toLocalTime());
-				ad.setEndTime(et.toLocalTime());
 			}
+			ad.setStartTime(st.toLocalTime());
+			ad.setEndTime(et.toLocalTime());
 			
 			//残業時間
 			if (minutes > 480) {
