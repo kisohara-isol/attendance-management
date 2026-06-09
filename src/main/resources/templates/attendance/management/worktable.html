@@ -20,82 +20,112 @@
 			padding-top: 10px;
 		}
 
-		table {
+		/* ★ 新設：画面内のすべての主要ブロックの幅を60%に統一し、中央に寄せるための共通枠 */
+		.main-container {
 			width: 60%;
+			margin: 0 auto;
+			/* 左右を auto にして画面の真ん中に配置 */
+		}
+
+		/* ★ タイトルや社員情報もこの枠を基準にする */
+		h2 {
+			margin-top: 10px;
+			margin-bottom: 20px;
+		}
+
+		/* テーブルを中央の枠幅いっぱいに広げる */
+		table {
+			width: 100%;
+			/* 親の main-container（60%）に対して100%にする */
 			margin-bottom: 30px;
 			table-layout: fixed;
 			border-collapse: collapse;
 		}
 
-		/* 社員名と対象年月のブロック全体の幅を揃える */
-		.shain-info,
-		.search-form {
-		    max-width: 60%;
+		/* テーブル内の文字、時間、修正リンクをすべて自動で真ん中にする */
+		table th,
+		table td {
+			text-align: center;
+			vertical-align: middle;
+			padding: 8px 4px;
 		}
 
 		.shain-info {
-		    display: block;
-		    margin-bottom: 15px; /* 入力欄との間隔 */
+			display: block;
+			margin-bottom: 15px;
 		}
 
-		/* ★「社員名：」と「対象年月：」の文字幅を統一して、右側をピタッと揃える */
+		/* 「社員名：」と「対象年月：」の文字幅を統一 */
 		.shain-info span:first-child,
-		.flex-container > span {
-		    display: inline-block;
-		    width: 90px; 
+		.flex-container>span {
+			display: inline-block;
+			width: 90px;
 			padding-top: 4px;
 		}
 
-		/* ★ 横並びのバランスを調整（space-between を gap に変更） */
+		/* 横並びのバランスを調整 */
 		.flex-container {
-		    display: flex;
-		    align-items: flex-start;   
-		    gap: 20px;             /* 要素同士の程よい隙間を開ける */
+			display: flex;
+			align-items: flex-start;
+			gap: 20px;
 		}
 
 		.search-form input[type="text"] {
-		    padding: 4px;
-		    width: 70px;           /* 入力欄を少しだけコンパクトに */
+			padding: 4px;
+			width: 70px;
 		}
 
 		.search-form button {
-		    padding: 5px 10px;
+			padding: 5px 10px;
 		}
 
-		/* ★ エラーメッセージの位置調整 */
+		/* エラーメッセージの位置調整 */
 		.input-group {
-		    display: inline-flex;
-		    flex-direction: column; /* 入力欄（input-row）の真下にエラーを出す */
-		    align-items: flex-start; /* エラー文字を左寄せにする */
+			display: inline-flex;
+			flex-direction: column;
+			align-items: flex-start;
 			width: 140px;
 		}
 
-		/* ★ 「年」「月」のテキストと入力欄の横並びを完全に固定 */
+		/* 「年」「月」のテキストと入力欄の横並び */
 		.input-row {
-		    display: flex;
-		    align-items: center;    /* 入力欄と「年」「月」の文字の上下中央揃え */
-		    white-space: nowrap;    /* 絶対に途中で改行させないお守り */
-		    gap: 5px;               /* 入力欄と「年」「月」の間の隙間 */
+			display: flex;
+			align-items: center;
+			white-space: nowrap;
+			gap: 5px;
 		}
 
 		.error-message {
-		    color: red;
-		    font-size: 0.85em;
-		    margin-top: 4px;
-		    white-space: nowrap;    /* エラーメッセージも改行させず横に伸ばす */
+			color: red;
+			font-size: 0.85em;
+			margin-top: 4px;
+			white-space: nowrap;
 		}
 
+		/* 区切り線も幅を揃えて中央寄せ */
 		hr {
-		    border: none;
-		    border-top: 1px dashed black;
-		    margin-top: 25px;    /* エラーが出ても点線と被らないように余白を確保 */
+			border: none;
+			border-top: 1px dashed black;
+			margin-top: 25px;
+			margin-bottom: 25px;
+		}
+
+		/* ★ 下のボタン用：左寄せのまま、上のテーブルの左端と縦のラインを合わせる */
+		.left-align-container {
+			display: flex;
+			justify-content: flex-start;
+			/* 左寄せ */
+			gap: 40px;
+			/* ボタン同士のすき間 */
+			margin-bottom: 15px;
 		}
 	</style>
 </head>
 
-<div>
+<body>
 
-	<div>
+	<div class="main-container">
+
 		<h2> 勤務表</h2>
 
 		<div class="shain-info">
@@ -104,57 +134,81 @@
 		</div>
 
 		<form class="search-form" th:action="@{/attendance/management/worktable}" th:object="${WorkTableRequest}"
-			method="post" style="margin-top: 10px;">
-
+			method="post">
 			<div class="flex-container">
 				<span> 対象年月： </span>
 
 				<div class="input-group">
 					<div class="input-row">
-					<input type="text" th:field="*{workYear}"> 年
-					</div><span class="error-message" th:if="${#fields.hasErrors('workYear')}" th:errors="*{workYear}"></span>
+						<input type="text" th:field="*{workYear}"> 年
+					</div>
+					<span class="error-message" th:if="${#fields.hasErrors('workYear')}" th:errors="*{workYear}"></span>
 				</div>
 
 				<div class="input-group">
 					<div class="input-row">
-					<input type="text" th:field="*{workMonth}"> 月
-					</div><span class="error-message" th:if="${#fields.hasErrors('workMonth')}"
+						<input type="text" th:field="*{workMonth}"> 月
+					</div>
+					<span class="error-message" th:if="${#fields.hasErrors('workMonth')}"
 						th:errors="*{workMonth}"></span>
 				</div>
 
 				<button type="submit">表示</button>
 			</div>
+		</form>
+
+		<hr>
+
+		<table th:if="${workList}" border="1">
+			<thead>
+				<tr>
+					<th>日付</th>
+					<th>曜日</th>
+					<th>出勤</th>
+					<th>退勤</th>
+					<th>残業時間</th>
+					<th>備考</th>
+					<th>勤務時間修正</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="work : ${workList}"
+					th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
+					<td th:text="${work.workDay}"></td>
+					<td>
+						<span th:text="${work.dayOfWeek}"
+							th:style="${work.breakDay} ? 'color: red;' : 'color: black;'"></span>
+					</td>
+					<td th:text="${work.breakDay} ? '休み' : ${work.startTime}"></td>
+					<td th:text="${work.breakDay} ? '—' : ${work.endTime}"></td>
+					<td th:text="${work.minutes > 480 ? work.overTime : '—'}"></td>
+					<td th:text="${work.note}"></td>
+
+					<td>
+						<a th:href="@{/attendance/management/retoch(
+						        workDay=${work.workDay}, 
+						        startTime=${work.startTime}, 
+						        endTime=${work.endTime}, 
+						        note=${work.note}
+						    )}" style="display: block; text-decoration: none; color: #0066cc; font-weight: bold;">修正</a>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div class="left-align-container">
+			<a th:href="@{/attendance/management/workinput}">勤務を追加</a>
+
+			<a id="admin-panel" th:if="${shain.shainName == '木曽原'}" th:href="@{/attendance/management/restore}">
+				社員復旧
+			</a>
+		</div>
+
+		<div>
+			<a th:href="@{/attendance/management/login}" style="color: #0066cc; text-decoration: none;">ログアウト</a>
+		</div>
+
 	</div>
-	</form><br>
-	<hr align=center color=black><br>
-
-	<table th:if="${workList}" border="1">
-		<tr>
-			<th>日付</th>
-			<th>曜日</th>
-			<th>出勤</th>
-			<th>退勤</th>
-			<th>残業時間</th>
-			<th>備考</th>
-		</tr>
-		<tr th:each="work : ${workList}"
-			th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
-			<td th:text="${work.workDay}"></td>
-			<td th:text="${work.dayOfWeek}" th:style="${work.breakDay} ? 'color: red;' : 'color: black;'"></td>
-			<td th:text="${work.breakDay} ? '休み' : ${work.startTime}"></td>
-			<td th:text="${work.endTime}"></td>
-			<td th:text="${work.minutes > 480 ? work.overTime : null}"></td>
-			<td th:text="${work.note}"></td>
-		</tr>
-	</table>
-
-	<div>
-		<a th:href="@{/attendance/management/workinput}">勤務を追加</a>
-	</div>
-
-	<br>
-	<div><a th:href="@{/attendance/management/login}">ログアウト</a></div>
-
-	</body>
+</body>
 
 </html>
