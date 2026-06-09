@@ -90,6 +90,16 @@
 		    border-top: 1px dashed black;
 		    margin-top: 25px;    /* エラーが出ても点線と被らないように余白を確保 */
 		}
+		
+		/* ★ 下のボタン用：左寄せのまま、上のテーブルの左端と縦のラインを合わせる */
+			.left-align-container {
+			display: flex;
+			justify-content: flex-start;
+			/* 左寄せ */
+			gap: 40px;
+			/* ボタン同士のすき間 */
+			margin-bottom: 15px;
+		}
 	</style>
 </head>
 
@@ -124,64 +134,8 @@
 
 				<button type="submit">表示</button>
 			</div>
-<<<<<<< HEAD
 		</form>
-
-		<hr>
-
-		<table th:if="${workList}" border="1">
-			<thead>
-				<tr>
-					<th>日付</th>
-					<th>曜日</th>
-					<th>出勤</th>
-					<th>退勤</th>
-					<th>残業時間</th>
-					<th>備考</th>
-					<th>勤務時間修正</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="work : ${workList}"
-					th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
-					<td th:text="${work.workDay}"></td>
-					<td>
-						<span th:text="${work.dayOfWeek}"
-							th:style="${work.breakDay} ? 'color: red;' : 'color: black;'"></span>
-					</td>
-					<td th:text="${work.breakDay} ? '休み' : ${work.startTime}"></td>
-					<td th:text="${work.breakDay} ? '—' : ${work.endTime}"></td>
-					<td th:text="${work.minutes > 480 ? work.overTime : '—'}"></td>
-					<td th:text="${work.note}"></td>
-
-					<td>
-						<a th:href="@{/attendance/management/retoch(
-						        workDay=${work.workDay}, 
-						        startTime=${work.startTime}, 
-						        endTime=${work.endTime}, 
-						        note=${work.note}
-						    )}" style="display: block; text-decoration: none; color: #0066cc; font-weight: bold;">修正</a>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-
-		<div class="left-align-container">
-			<a th:href="@{/attendance/management/workinput}">勤務を追加</a>
-
-			<a id="admin-panel" th:if="${shain.shainName == '木曽原'}" th:href="@{/attendance/management/restore}">
-				社員復旧
-			</a>
-		</div>
-
-		<div>
-			<a th:href="@{/attendance/management/login}" style="color: #0066cc; text-decoration: none;">ログアウト</a>
-		</div>
-
-=======
->>>>>>> parent of 43fc88b (勤怠上方修正機能追加)
-	</div>
-	</form><br>
+		
 	<hr align=center color=black><br>
 
 	<table th:if="${workList}" border="1">
@@ -192,20 +146,29 @@
 			<th>退勤</th>
 			<th>残業時間</th>
 			<th>備考</th>
+			<th>勤務時間修正</th>
 		</tr>
-		<tr th:each="work : ${workList}"
-			th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
+		<tr th:each="work : ${workList}"th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
 			<td th:text="${work.workDay}"></td>
 			<td th:text="${work.dayOfWeek}" th:style="${work.breakDay} ? 'color: red;' : 'color: black;'"></td>
 			<td th:text="${work.breakDay} ? '休み' : ${work.startTime}"></td>
 			<td th:text="${work.endTime}"></td>
 			<td th:text="${work.minutes > 480 ? work.overTime : null}"></td>
 			<td th:text="${work.note}"></td>
+			<td>
+				<a th:href="@{/attendance/management/retoch(
+					workDay=${work.workDay}, 
+					startTime=${work.startTime}, 
+					endTime=${work.endTime}, 
+					note=${work.note}
+					)}" style="display: block; text-align: center; color: #0066cc; font-weight: bold;">修正</a>
+				</td>
 		</tr>
 	</table>
-
-	<div>
-		<a th:href="@{/attendance/management/workinput}">勤務を追加</a>
+			
+	<div class="left-align-container">
+				<a th:href="@{/attendance/management/workinput}">勤務を追加</a>
+				<a id="admin-panel" th:if="${shain.shainName == '木曽原'}" th:href="@{/attendance/management/restore}">社員復旧</a>
 	</div>
 
 	<br>
