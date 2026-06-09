@@ -102,15 +102,13 @@ public class WorkTableServiceImpl implements WorkTableService {
 			long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
 			ad.setMinutes(minutes);
 
-			//出勤時間・退勤時間が両方00:00の時は休み
+			// 出勤時間・退勤時間が両方00:00の時は休み
 			LocalTime breakTime = LocalTime.of(00, 00);
 			if (startTime.equals(breakTime) && endTime.equals(breakTime)) {
 				ad.setBreakDay(true);
-				// そうでないときは表示させる
-			} else {
-				ad.setStartTime(st.toLocalTime());
-				ad.setEndTime(et.toLocalTime());
 			}
+			ad.setStartTime(st.toLocalTime());
+			ad.setEndTime(et.toLocalTime());
 			
 			//残業時間
 			if (minutes > 480) {
