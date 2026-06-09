@@ -156,7 +156,7 @@
 			<td th:text="${work.minutes > 480 ? work.overTime : null}"></td>
 			<td th:text="${work.note}"></td>
 			<td>
-				<a th:href="@{/attendance/management/retoch(
+				<a th:href="@{/attendance/management/retouch(
 					workDay=${work.workDay}, 
 					startTime=${work.startTime}, 
 					endTime=${work.endTime}, 
