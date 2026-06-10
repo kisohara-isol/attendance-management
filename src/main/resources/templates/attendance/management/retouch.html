@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>勤務修正画面</title>
+	<meta name="author" content="Hagiwara">
+	<style>
+		.error-message {
+			color: red;
+			font-size: 0.85em;
+			margin-top: 4px;
+			white-space: nowrap;
+			/* エラーメッセージも改行させず横に伸ばす */
+		}
+		body {
+			padding-left: 35px;
+			padding-right: 35px;
+			padding-top: 10px;
+		}
+		.error-message {
+		    color: red;
+		    margin-top: 2px;
+		    
+		    display: block;         /* 強制的に改行させて下へ落とす */
+		    margin-left: 90px;      /* 「出勤時間：」の文字の幅分、右にずらしてボックスと位置を揃える */
+			position: absolute;
+		}
+		.input-row {
+		    margin-bottom: 30px; /* 15px から 30px 程度に広げて、エラーが入るスペースを常時キープ */
+		    position: relative;  /* absoluteの基準点にするため追加 */
+		}
+	</style>
+</head>
+
+<body>
+
+	<div>勤務修正</div><br>
+
+	<div>値を入力してください</div><br>
+
+	<form th:action="@{/attendance/management/retouch}" th:object="${retouchRequest}" method="post">
+		<input type="hidden" name="oldWorkDay" th:value="${oldWorkDay}">
+		<input type="hidden" name="oldStartTime" th:value="${oldStartTime}">
+		<input type="hidden" name="oldEndTime" th:value="${oldEndTime}">
+		<input type="hidden" name="oldNote" th:value="${oldNote}">
+
+		<div>
+			<label>出勤時間：</label>
+			<input type="text" th:field="*{startTime}" />
+			<span>(HHMM で入力、または「休み」)</span>
+			<span class="error-message" th:if="${#fields.hasErrors('startTime')}" th:errors="*{startTime}"></span>
+		</div>
+		<br>
+
+		<div>
+			<label>退勤時間：</label>
+			<input type="text" th:field="*{endTime}" />
+			<span>(HHMM で入力、休みの場合は空欄)</span>
+			<span class="error-message" th:if="${#fields.hasErrors('endTime')}" th:errors="*{endTime}"></span>
+		</div>
+		<br>
+
+		<div>
+			<label>備考：</label>
+			<input type="text" th:field="*{note}" />
+		</div>
+		<br>
+
+		<div>
+			<button type="submit">確定</button>
+			<input type="button" onclick="history.back()" value="戻る" class="up">
+		</div>
+	</form>
+
+</body>
+
+</html>

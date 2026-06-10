@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>社員復旧画面
+	</title>
+	<meta name="author" content="Soeda">
+	<style>
+		.container {
+			width: 600px;
+			margin: 200px auto;
+			font-family: "Helvetica Neue", Arial, sans-serif;
+		}
+
+		.error-message {
+			color: #dc3545;
+			background-color: #f8d7da;
+			border: 1px solid #f5c6cb;
+			padding: 10px;
+			border-radius: 4px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+	</style>
+</head>
+
+<body class="container">
+	<h2>社員復旧画面</h2>
+	<div>
+		<form th:action="@{/attendance/management/restore}" th:object="${restoreRequest}" method="POST">
+			<label>社員ID:</label>
+			<input th:type="number" th:field="*{shainId}" />
+			<div th:if="${errorMessage} OR ${#fields.hasErrors('shainId')}" th:class="error-message">
+				<th:block th:if="${#fields.hasErrors('shainId')}" th:errors="*{shainId}"></th:block>
+				<th:block th:if="${errorMessage}" th:text="${errorMessage}"></th:block>
+				<!--/*thymeleafのth:ifでは文字列が存在する場合trueと評価される*/-->
+			</div>
+			<br><button type="submit">復旧</button>
+		</form>
+	</div>
+</body>
+
+</html>
