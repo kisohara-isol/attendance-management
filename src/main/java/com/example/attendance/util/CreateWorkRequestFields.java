@@ -12,34 +12,32 @@ import java.util.stream.Collectors;
  */
 public enum CreateWorkRequestFields {
 	/**出勤日(workDay)*/
-	// ★変更：Map.entryを java.util.List.of() で囲むように修正
-	WORK_DAY(List.of(entry("typeMismatch", "W30003"), entry("NotNull", "W30001"))),
+	//ジェネリクスを用いる型(Entry<K,V>など)は配列にしたり可変長引数で渡したりすると型安全性が損なわれる
+	//なので一度Listにしてあげる
+	WORK_DAY(List.of(entry("typeMismatch", "W30003"), entry("NotNull", "W30001"))), //springの@DateTimeFormatはtypeMismatchの名で取得できる
 	/**出勤時間(startTime)*/
 	START_TIME(List.of(entry("NotEmpty", "W30002"), entry("Pattern", "W30004"))),
 	/**退勤時間(endTIme)*/
 	END_TIME(List.of(entry("typeMismatch", "W30006"), entry("HolidayCheck", "W30005"))),
 	/**備考(note)*/
-	// 空のリストを渡す
 	NOTE(List.of());
 
 	/**列挙子が持つ、{アノテーション名,エラーコード}のmap*/
 	private Map<String, String> annotations;
 
 	/**コンストラクタ
-	 * @param entriesList 各フィールドのアノテーションとエラーコードのリスト
+	 * @param entries 各フィールドのアノテーションとエラーコードがセットになったEntryのリスト
 	 */
-	// ★変更：可変引数（...）をやめて、Listで受け取るように修正
-	private CreateWorkRequestFields(List<Map.Entry<String, String>> entriesList) {
-		// Stream APIを使って、Listの中身をMapに変換して詰め込む
-		this.annotations = entriesList.stream()
+	private CreateWorkRequestFields(List<Map.Entry<String, String>> entries) {
+		this.annotations = entries.stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
-	 * 引数で指定されたアノテーション名に対応するエラーコードを返す。
-	 * @param annotationType アノテーション名
-	 * @return エラーコード。対応するアノテーションが存在しない場合はnull
-	 */
+	* 引数で指定されたアノテーション名に対応するエラーコードを返す。
+	* @param annotationType アノテーション名
+	* @return エラーコード。対応するアノテーションが存在しない場合はnull
+	*/
 	public String getErrorCode(String annotationType) {
 		if (this.annotations.size() == 0) {
 			return null;

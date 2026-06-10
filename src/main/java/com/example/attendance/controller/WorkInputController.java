@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.CreateWorkRequest;
-import com.example.attendance.util.CreateWorkRequestFeilds;
+import com.example.attendance.util.CreateWorkRequestFields;
 import com.example.attendance.util.LogUtil;
 
 /**
@@ -70,11 +70,11 @@ public class WorkInputController {
 		if (result.hasErrors()) {
 			result.getFieldErrors().stream().forEach(x -> {
 				//フィールド名に対応する列挙子を取得
-				CreateWorkRequestFeilds feild = switch (x.getField()) {
-				case "workDay" -> CreateWorkRequestFeilds.WORK_DAY;
-				case "startTime" -> CreateWorkRequestFeilds.START_TIME;
-				case "endTime" -> CreateWorkRequestFeilds.END_TIME;
-				case "note" -> CreateWorkRequestFeilds.NOTE;
+				CreateWorkRequestFields feild = switch (x.getField()) {
+				case "workDay" -> CreateWorkRequestFields.WORK_DAY;
+				case "startTime" -> CreateWorkRequestFields.START_TIME;
+				case "endTime" -> CreateWorkRequestFields.END_TIME;
+				case "note" -> CreateWorkRequestFields.NOTE;
 				default -> throw new IllegalArgumentException("Unexpected value: " + x.getField());
 				};
 				//アノテーションを取得
