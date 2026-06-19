@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Pattern;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.example.attendance.dto.validator.HolidayCheck;
+import com.example.attendance.util.CreateWorkRequestFields;
 
 import lombok.Data;
 
@@ -44,6 +45,24 @@ public class CreateWorkRequest {
 	 */
 	public CreateWorkRequest() {
 		// TODO 自動生成されたコンストラクター・スタブ
+	}
+	
+	/**
+	 * 渡されたフィールド名とアノテーション名に対応するエラーコードを取得する
+	 * @param field フィールド名
+	 * @param annotationType アノテーション名
+	 * @return エラーコード
+	 */
+	public static String getErrorCode(String field, String annotationType) {
+		//フィールド名に対応する列挙子を取得
+		CreateWorkRequestFields fieldEnum = switch (field) {
+		case "workDay" -> CreateWorkRequestFields.WORK_DAY;
+		case "startTime" -> CreateWorkRequestFields.START_TIME;
+		case "endTime" -> CreateWorkRequestFields.END_TIME;
+		case "note" -> CreateWorkRequestFields.NOTE;
+		default -> throw new IllegalArgumentException("Unexpected value: " + field);
+		};
+		return fieldEnum.getErrorCode(annotationType);
 	}
 
 }

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.CreateWorkRequest;
-import com.example.attendance.util.CreateWorkRequestFields;
+import com.example.attendance.util.ControllerUtil;
 import com.example.attendance.util.LogUtil;
 
 /**
@@ -68,19 +68,7 @@ public class WorkInputController {
 			RedirectAttributes redirect) {
 		//バリデーションチェック
 		if (result.hasErrors()) {
-			result.getFieldErrors().stream().forEach(x -> {
-				//フィールド名に対応する列挙子を取得
-				CreateWorkRequestFields feild = switch (x.getField()) {
-				case "workDay" -> CreateWorkRequestFields.WORK_DAY;
-				case "startTime" -> CreateWorkRequestFields.START_TIME;
-				case "endTime" -> CreateWorkRequestFields.END_TIME;
-				case "note" -> CreateWorkRequestFields.NOTE;
-				default -> throw new IllegalArgumentException("Unexpected value: " + x.getField());
-				};
-				//アノテーションを取得
-				String annotationType = x.getCode();
-				LogUtil.warn(feild.getErrorCode(annotationType));
-			});
+			ControllerUtil.warnAllBindErrors(result, CreateWorkRequest::getErrorCode);
 			return "attendance/management/workinput"; //相対パスにしないとエラーとなると報告有り
 		}
 

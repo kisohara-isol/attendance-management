@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.RestoreRequest;
 import com.example.attendance.service.RestoreService;
+import com.example.attendance.util.ControllerUtil;
 import com.example.attendance.util.LogUtil;
 
 /**
@@ -78,7 +79,7 @@ public class RestoreController {
 		//バリデーションチェック
 		if (result.hasErrors()) {
 			//バリデーションに引っかかった場合
-			result.getFieldErrors().forEach(x -> LogUtil.warn(RestoreRequest.getErrorCode(x.getCode())));
+			ControllerUtil.warnAllBindErrors(result, RestoreRequest.getAnnotationCodeMap());
 			return "attendance/management/restore";
 		}
 

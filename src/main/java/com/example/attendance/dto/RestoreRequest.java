@@ -22,22 +22,26 @@ public class RestoreRequest {
 	@NotNull(message = "{W40001}")
 	@Positive(message = "{W40002}")
 	private Integer shainId;
-	
-	/**
-	 * このdtoのフィールド(shainId)がもつアノテーションとエラーコードのマップ<br>
-	 * <p>key=フィールドに付与されたアノテーション名<br>
-	 * value=対応するエラーコード
-	 */
-	private static final Map<String, String> ANNOTATION_CODE = Map.ofEntries(
-			entry("NotNull", "W40001"),
-			entry("Positive", "W40002"));
 
 	/**
-	 * このdtoのshainIdフィールドがもつアノテーションの名前から、発生するエラーコードを取得する
-	 * @param annotationName アノテーション名
-	 * @return {}で囲ったエラーコード
+	 * このdtoの各フィールドがもつアノテーションとエラーコードの二次元マップ<br>
+	 * <p>親mapKey=フィールド名<br>
+	 * 子mapKey=フィールドに付与されたアノテーション名<br>
+	 * 子mapValue=対応するエラーコード
 	 */
-	public static String getErrorCode(String annotationName) {
-		return ANNOTATION_CODE.get(annotationName);
+	private static final Map<String, Map<String, String>> ANNOTATION_CODE = Map.ofEntries(
+			entry("shainId", Map.ofEntries(
+					entry("NotNull", "W40001"),
+					entry("Positive", "W40002"))));
+
+	/**
+	 * このdtoの各フィールドが持つアノテーションとエラーコードの二次元マップを返す
+	 * @return Map
+	 * <p>親mapKey=フィールド名<br>
+	 * 子mapKey=フィールドに付与されたアノテーション名<br>
+	 * 子mapValue=対応するエラーコード
+	 */
+	public static Map<String, Map<String, String>> getAnnotationCodeMap() {
+		return ANNOTATION_CODE;
 	}
 }
