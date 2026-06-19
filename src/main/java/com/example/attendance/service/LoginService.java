@@ -8,16 +8,10 @@ import com.example.attendance.entity.ShainData;
  */
 public interface LoginService {
 
-	/**
-	 * 入力されたログインIDとパスワードを元に、ログインの成否およびアカウント状態を判定します。
-	 *
-	 * @param loginId  画面から入力されたログインID
-	 * @param password 画面から入力されたパスワード
-	 * @return 判定結果のステータスと社員データを保持する {@link LoginResult} オブジェクト
-	 */
-	int loginJudge(String loginId, String password);
+	public ShainData resetCountBothDbAndShainData(ShainData shain);
 
-	int getRemainingAttempts(String loginId);
+	void incrementCount(ShainData shain);
 	
 	ShainData getShainById(String loginId);
+
 }

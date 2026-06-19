@@ -73,23 +73,22 @@
 		<form th:action="@{/attendance/management/login}" th:object="${loginRequest}" th:method="post">
 			<div class="form-row">
 				<label class="form-label">ログインID：</label>
-				<input type="text" name="loginId" size="20" /><br>
+				<input type="text" th:field="*{loginId}" size="20" />
 			</div>
-
 			<div class="form-row">
 				<label class="form-label">パスワード：</label>
-				<input type="text" name="password" size="20" /><br>
+				<input type="password" th:field="*{password}" size="20" />
 			</div>
 			<input type="submit" class="submit-btn" value="ログイン">
 			<br>
-			<div th:if="${errorMessage}">
+			<div th:if="${errorMessage}" th:each="message : ${errorMessage}">
 				<div>
-					<font color="red">[[${errorMessage}]]</font>
+					<font color="red">
+						<td th:text="${message}"></td>
+					</font>
 				</div>
 			</div>
-	</div>
-	</form>
-
+		</form>
 </body>
 
 </html>

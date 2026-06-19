@@ -52,9 +52,9 @@ public interface ShainDataMapper {
 	 */
 	@Insert("INSERT INTO attendance_table (shain_id,work_day,start_time,end_time,note) VALUES (#{shainId},#{workDay},#{startTime},#{endTime},#{note})")
 	void insertAttendanceData(
-			@Param("shainId") int shainId, 
+			@Param("shainId") int shainId,
 			@Param("workDay") LocalDate workDay,
-			@Param("startTime") LocalTime startTime, 
+			@Param("startTime") LocalTime startTime,
 			@Param("endTime") LocalTime endTime,
 			@Param("note") String note);
 
@@ -68,7 +68,7 @@ public interface ShainDataMapper {
 	 */
 	@Update("UPDATE shain_data SET stop_flg = #{stopFlg} WHERE login_id = #{loginId}")
 	void updateShainData(ShainData shain);
-	
+
 	/**
 	 * 引数で渡された社員IDに対応するアカウントのstop_flgを0にリセット(アップデート)します。
 	 * @param shainId 対象となる社員ID
@@ -76,4 +76,20 @@ public interface ShainDataMapper {
 	 */
 	@Update("UPDATE shain_data SET stop_flg = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
 	int resetStopFlugByShainId(@Param("shainId") int shainId);
+
+	/**
+	 * 引数で渡された社員IDに対応するアカウントのfailure_countを0にリセット(アップデート)します。
+	 * @param shainId 対象となる社員ID
+	 * @return 更新に成功した数<br>正しく実行されれば1であることが期待される
+	 */
+	@Update("UPDATE shain_data SET failure_count = 0 WHERE shain_id = #{shainId}")
+	int resetFailureCountByShainId(@Param("shainId") int shainId);
+
+	/**
+	 * 引数で渡された社員IDに対応するアカウントのfailure_countをインクリメントします。
+	 * @param shainId 対象となる社員ID
+	 * @return 更新に成功した数<br>正しく実行されれば1であることが期待される
+	 */
+	@Update("UPDATE shain_data SET failure_count = failure_count + 1 WHERE shain_id = #{shainId}")
+	int incrementFailureCountByShainId(@Param("shainId") int shainId);
 }

@@ -1,106 +1,68 @@
 package com.example.attendance.service;
 
-/**
- * @author Soeda
- * */
-
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.IntUnaryOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.attendance.entity.ShainData;
 import com.example.attendance.repository.ShainDataMapper;
-import com.example.attendance.util.LogUtil;
 
+/**
+ * /attendance/management/loginのサービスクラス
+ */
 @Service
 public class LoginServiceImpl implements LoginService {
 
+	/**
+	 * DBアクセス用のマッパー
+	 */
 	@Autowired
 	private ShainDataMapper shainDataMapper;
 
 	/**
-	 * ログイン時失敗した回数をアカウントごとに格納するmap
-	 * */
-	private final Map<String, Integer> errorMap = new HashMap<>();
-
-	/**
-	 * ログインの判定と、失敗時のロック処理をすべて行う
-	 * * @param loginId  画面から入力されたID
-	 * @param password 画面から入力されたパスワード
-	 * @return 判定結果のステータスコード（0:失敗, 1:成功, 2:ロック中, 3:今回でロックされた,4:アカウントが存在しない,5:DB接続エラー）
+	 * 社員IDが渡された社員データと一致するDBのレコードを更新し、失敗回数を0にする。<br>
+	 * その後、同じく失敗回数を0にリセットした社員データを返却する。
+	 * @param shain 対象の社員データ
+	 * @return 失敗回数(failureCount)が0になった社員データ
 	 */
 	@Override
-	@Transactional // DB更新を伴うため、Service層に付けるのが最適です
-	public int loginJudge(String loginId, String password) {
-
-		ShainData shain = null;
-
-		//DBに接続できているか
-		try {
-
-			// 1. まず入力されたIDで社員が存在するか確認
-			shain = getShainById(loginId);
-			//shainDataMapper.selectShainDataがないため実際はIDとパスワードセットで検索は行えていない。
-
-		} catch (DataAccessException e) {
-
-			return 5; // 
-		}
-
-		// 社員が存在しない場合は、認証失敗(4)を返す
-		if (shain == null) {
-			return 4;
-		}
-
-		// 2. すでにアカウントがロックされている（stopFlgが1）か確認
-		if (shain.getStopFlg() == 1) {
-			return 2; // すでにロック中
-		}
-
-		// 3. パスワードの照合
-		if (shain.getPassword().equals(password)) {
-			// ログイン成功
-			errorMap.clear();//ログイン成功時errorMapを完全にリセット
-
-			return 1;
-		} else {
-			// パスワード間違い（ログイン失敗）
-
-			//Mapから失敗回数を取得、一度も間違えていなければ0を設定
-			int errorCounts = errorMap.getOrDefault(loginId, 0) + 1;
-			errorMap.put(loginId, errorCounts);
-
-			// 3回連続で間違えたらアカウントをロックする
-			if (errorCounts >= 3) {
-				shain.setStopFlg(1);
-				try {
-					shainDataMapper.updateShainData(shain);
-				} catch (DataAccessException e) {
-					LogUtil.error("E10001");
-					return 5;
-				}
-				return 3; // 今回の失敗で新しくロックされた
-			}
-
-			return 0; // 通常のログイン失敗
-		}
+	@Transactional
+	public ShainData resetCountBothDbAndShainData(ShainData shain) {
+		this.executeUpdateOneRecordById(shainDataMapper::resetFailureCountByShainId, shain.getShainId());
+		//失敗カウントを0に
+		shain.setFailureCount(0);
+		return shain;
 	}
 
 	/**
-	 * 残り試行回数を取得する（Controller側でメッセージに表示するため）
+	 * 社員IDが渡された社員データと一致するDBのレコードを更新し、失敗回数1増加する。
+	 * @param shain 対象の社員データ
 	 */
 	@Override
-	public int getRemainingAttempts(String loginId) {
-		//Mapから失敗回数を取得、一度も間違えていなければ0を設定
-		int errorCounts = errorMap.getOrDefault(loginId, 0);
-		return 3 - errorCounts;
+	@Transactional
+	public void incrementCount(ShainData shain) {
+		this.executeUpdateOneRecordById(shainDataMapper::incrementFailureCountByShainId, shain.getShainId());
 	}
 
-	
+	/**
+	 * 社員IDを用いて1件のレコードのみを更新するメソッドを実行する。<br>
+	 * 更新件数が1件でない場合はObjectOptimisticLockingFailureExceptionを発する、
+	 * @param updateMethod 引数がshainIdであり、int型を返すDB更新メソッド
+	 * @param shainId 社員ID
+	 */
+	@Transactional
+	private void executeUpdateOneRecordById(IntUnaryOperator updateMethod, int shainId) {
+		int updateResult = updateMethod.applyAsInt(shainId);
+		if (updateResult != 1) {
+			//更新が正常に行われなかった場合にエラーを投げる。
+			//"ObjectOptimisticLockingFailureException":DataAccessExceptionのサブクラスで、「楽観的ロック」の失敗時に投げる
+			throw new ObjectOptimisticLockingFailureException(ShainData.class, shainId);
+		}
+	}
+
 	/**
 	 *ログインIDから社員情報を取得する。
 	 */
