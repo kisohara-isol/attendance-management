@@ -23,7 +23,7 @@ public class RestoreServiceImpl implements RestoreService {
 	 */
 	@Override
 	public boolean executeRestoreShain(int shainId) {
-		boolean result = mapper.resetStopFlugByShainId(shainId) == 1 ? true : false;
+		boolean result = mapper.resetFailureCountToSuspendedAccountByShainId (shainId) == 1 ? true : false;
 		return result;
 	}
 }

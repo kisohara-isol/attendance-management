@@ -1,7 +1,5 @@
 package com.example.attendance.controller;
 
-import java.util.Collections;
-
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,9 +40,7 @@ public class RestoreController {
 	public String display(@ModelAttribute RestoreRequest restoreRequest, HttpSession session,
 			RedirectAttributes redirect) {
 		//sessionの確認
-		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
-				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認
-		if (!isKeepingSession) {
+		if (!ControllerUtil.isKeepingSession(session, "loginShain")) {
 			LogUtil.warn("W99999");
 			redirect.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
 			return "redirect:/attendance/management/login"; // 最初のページへ
@@ -66,9 +62,7 @@ public class RestoreController {
 	public String restoreAndRedirect(@ModelAttribute @Validated RestoreRequest request, BindingResult result,
 			HttpSession session, Model model, RedirectAttributes redirect) {
 		//sessionの確認(再度)
-		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
-				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認
-		if (!isKeepingSession) {
+		if (!ControllerUtil.isKeepingSession(session, "loginShain")) {
 			LogUtil.warn("W99999");
 
 			redirect.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");

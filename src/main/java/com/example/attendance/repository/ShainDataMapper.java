@@ -70,12 +70,13 @@ public interface ShainDataMapper {
 	void updateShainData(ShainData shain);
 
 	/**
-	 * 引数で渡された社員IDに対応するアカウントのstop_flgを0にリセット(アップデート)します。
+	 * 引数で渡された社員IDに対応する、停止されているアカウントのfailure_countを0にリセット(アップデート)します。<br>
+	 * 対象のアカウントが停止されていない場合はupdateは実行されません
 	 * @param shainId 対象となる社員ID
 	 * @return 更新に成功した数<br>正しく実行されれば1であることが期待される
 	 */
-	@Update("UPDATE shain_data SET stop_flg = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
-	int resetStopFlugByShainId(@Param("shainId") int shainId);
+	@Update("UPDATE shain_data SET failure_count = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
+	int resetFailureCountToSuspendedAccountByShainId(@Param("shainId") int shainId);
 
 	/**
 	 * 引数で渡された社員IDに対応するアカウントのfailure_countを0にリセット(アップデート)します。
