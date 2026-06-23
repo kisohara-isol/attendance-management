@@ -1,7 +1,7 @@
 package com.example.attendance.repository;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -50,13 +50,37 @@ public interface ShainDataMapper {
 	 * @param endTime   退勤時間（未入力の場合は 00:00）
 	 * @param note      備考
 	 */
-	@Insert("INSERT INTO attendance_table (shain_id,work_day,start_time,end_time,note) VALUES (#{shainId},#{workDay},#{startTime},#{endTime},#{note})")
+	/**
+	 * 勤務確認画面で「追加」ボタンが押された際、勤怠データをテーブルに新規登録（インサート）します。
+	 */
+	@Insert("INSERT INTO attendance_table (shain_id, work_day, start_time, end_time, note) " +
+			"VALUES (#{shainId}, #{workDay}, #{startTime}, #{endTime}, #{note})")
+	// 💡 【修正】消えていた引数を復活させ、時間を LocalTime から String に変更しました
 	void insertAttendanceData(
-			@Param("shainId") int shainId, 
+			@Param("shainId") int shainId,
 			@Param("workDay") LocalDate workDay,
-			@Param("startTime") LocalTime startTime, 
-			@Param("endTime") LocalTime endTime,
+			@Param("startTime") String startTime, // ⭕ String型に変更
+			@Param("endTime") String endTime, // ⭕ String型に変更
 			@Param("note") String note);
+
+	/**
+	 * 既存の勤怠データを更新（アップデート）します。
+	 */
+	@Update("UPDATE attendance_table SET start_time = #{startTime}, end_time = #{endTime}, note = #{note} " +
+			"WHERE shain_id = #{shainId} AND work_day = #{workDay}")
+	// 💡 【修正】時間を LocalTime から String に変更しました
+	void updateAttendanceData(
+			@Param("shainId") int shainId,
+			@Param("workDay") LocalDate workDay,
+			@Param("startTime") String startTime, // ⭕ String型に変更
+			@Param("endTime") String endTime, // ⭕ String型に変更
+			@Param("note") String note);
+
+	/**
+	 * すでにデータが存在するか確認するためのカウントSQL
+	 */
+	@Select("SELECT COUNT(*) FROM attendance_table WHERE shain_id = #{shainId} AND work_day = #{workDay}")
+	int countAttendanceData(@Param("shainId") int shainId, @Param("workDay") LocalDate workDay);
 
 	/**
 	 * 引数で渡された社員オブジェクトの情報に基づき、データベースの社員データを更新（アップデート）します。
@@ -68,12 +92,27 @@ public interface ShainDataMapper {
 	 */
 	@Update("UPDATE shain_data SET stop_flg = #{stopFlg} WHERE login_id = #{loginId}")
 	void updateShainData(ShainData shain);
-	
+
 	/**
 	 * 引数で渡された社員IDに対応するアカウントのstop_flgを0にリセット(アップデート)します。
 	 * @param shainId 対象となる社員ID
 	 * @return 更新に成功した数<br>正しく実行されれば1であることが期待される
 	 */
-	@Update("UPDATE shain_data SET stop_flg = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
+	@Update("UPDATE shain_data SET stop_flg = 0 AND failure_count = 0 WHERE shain_id = #{shainId} AND stop_flg = 1 AND failure_count =3")
 	int resetStopFlugByShainId(@Param("shainId") int shainId);
+
+	/**
+	 * 社員ごとの給料計算明細を取得するマッパー
+	 * 社員IDから取得
+	 * */
+	@Select("SELECT * FROM  salary_data WHERE shain_id = #{shainId}")
+	Map<String, Object> selectSalaryById(@Param("shainId") int shainId);
+
+	/**
+	 * 引数で渡された社員IDに対応するアカウントのfailure_countを更新します。
+	 * ログインを一度失敗するごとに１づつ増やす
+	 * */
+	@Update("UPDATE shain_data SET failure_count = #{failureCount} WHERE login_id = #{loginId}")
+	int updateFailureCount(ShainData shain);
+
 }

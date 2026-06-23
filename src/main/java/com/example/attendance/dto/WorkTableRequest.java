@@ -31,4 +31,10 @@ public class WorkTableRequest {
 	 */
 	@NotBlank(message = "月を入力してください。")
 	private String workMonth;
+	
+	// WorkTableRequest.java の中にこれが必要です
+	private String workDay;
+
+	public String getWorkDay() { return workDay; }
+	public void setWorkDay(String workDay) { this.workDay = workDay; }
 }

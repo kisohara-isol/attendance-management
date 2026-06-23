@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>勤務表提出完了画面</title>
+</head>
+
+<divbody>
+	<h1>勤務表提出完了画面</h1>
+
+	<div>完了しました。</div><br>
+	<div>明細は<span th:text="${login_id} + '_' + ${yyyy} + ${MM} + '_salary.csv'"></span>ファイルを参照してください</div><br>
+
+	<div><a th:href="@{/attendance/management/worktable}">勤務表画面へ</a></div><br>
+	<div><a th:href="@{/attendance/management/login}">ログイン画面へ</a></div>
+
+
+	<script th:inline="javascript">
+		window.onload = function () {
+			// Thymeleafを使って、Javaから届いたパラメータを組み込んだダウンロードURLを作成
+			var downloadUrl = /*[[@{/attendance/management/workcomlete/download(Year=${yyyy}, Month=${MM}, attendanceDate=${attendanceDate}, salary=${salary})}]]*/ '';
+
+			// 画面を切り替えずに、ダウンロードだけを実行する
+			window.location.href = downloadUrl;
+		};
+	</script>
+	</body>
+
+</html>

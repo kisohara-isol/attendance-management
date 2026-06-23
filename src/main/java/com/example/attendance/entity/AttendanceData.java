@@ -1,7 +1,5 @@
 package com.example.attendance.entity;
 
-import java.time.LocalTime;
-
 import lombok.Data;
 
 /**
@@ -21,28 +19,28 @@ import lombok.Data;
 public class AttendanceData {
 	/** 社員を一意に識別するための社員ID（ShainDataのIDと紐づきます） */
 	private int shainId;
-	
-	/** 出勤日（フォーマット済みの文字列 例: "2026/06/02"） */	
+
+	/** 出勤日（フォーマット済みの文字列 例: "2026/06/02"） */
 	private String workDay;
-	
+
 	/** 出勤時刻（時:分） */
-	private LocalTime startTime;
-	
+	private String startTime;
+
 	/** 退勤時刻（時:分） */
-	private LocalTime endTime;
-	
+	private String endTime;
+
 	/** 当日の総勤務時間（分数単位） */
 	private long minutes;
-	
+
 	/** 勤務に関する備考（有給申請や遅刻理由など） */
 	private String note;
-	
+
 	/** 休日フラグ（true: 休み、false: 出勤日） */
 	private boolean breakDay;
-	
+
 	/** 定時を超過した残業時間（フォーマット済みの文字列 例: " 1:30"） */
 	private String overTime;
-	
+
 	/** 出勤日の曜日（例: "月", "火"） */
 	private String dayOfWeek;
 }

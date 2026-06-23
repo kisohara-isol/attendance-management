@@ -27,153 +27,165 @@
 			border-collapse: collapse;
 		}
 
-		/* 社員名と対象年月のブロック全体の幅を揃える */
 		.shain-info,
 		.search-form {
-		    max-width: 60%;
+			max-width: 60%;
 		}
 
 		.shain-info {
-		    display: block;
-		    margin-bottom: 15px; /* 入力欄との間隔 */
+			display: block;
+			margin-bottom: 15px;
 		}
 
-		/* ★「社員名：」と「対象年月：」の文字幅を統一して、右側をピタッと揃える */
 		.shain-info span:first-child,
-		.flex-container > span {
-		    display: inline-block;
-		    width: 90px; 
+		.flex-container>span {
+			display: inline-block;
+			width: 90px;
 			padding-top: 4px;
 		}
 
-		/* ★ 横並びのバランスを調整（space-between を gap に変更） */
 		.flex-container {
-		    display: flex;
-		    align-items: flex-start;   
-		    gap: 20px;             /* 要素同士の程よい隙間を開ける */
+			display: flex;
+			align-items: flex-start;
+			gap: 20px;
 		}
 
 		.search-form input[type="text"] {
-		    padding: 4px;
-		    width: 70px;           /* 入力欄を少しだけコンパクトに */
+			padding: 4px;
+			width: 70px;
 		}
 
 		.search-form button {
-		    padding: 5px 10px;
+			padding: 5px 10px;
 		}
 
-		/* ★ エラーメッセージの位置調整 */
 		.input-group {
-		    display: inline-flex;
-		    flex-direction: column; /* 入力欄（input-row）の真下にエラーを出す */
-		    align-items: flex-start; /* エラー文字を左寄せにする */
+			display: inline-flex;
+			flex-direction: column;
+			align-items: flex-start;
 			width: 140px;
 		}
 
-		/* ★ 「年」「月」のテキストと入力欄の横並びを完全に固定 */
 		.input-row {
-		    display: flex;
-		    align-items: center;    /* 入力欄と「年」「月」の文字の上下中央揃え */
-		    white-space: nowrap;    /* 絶対に途中で改行させないお守り */
-		    gap: 5px;               /* 入力欄と「年」「月」の間の隙間 */
+			display: flex;
+			align-items: center;
+			white-space: nowrap;
+			gap: 5px;
 		}
 
 		.error-message {
-		    color: red;
-		    font-size: 0.85em;
-		    margin-top: 4px;
-		    white-space: nowrap;    /* エラーメッセージも改行させず横に伸ばす */
+			color: red;
+			font-size: 0.85em;
+			margin-top: 4px;
+			white-space: nowrap;
 		}
 
 		hr {
-		    border: none;
-		    border-top: 1px dashed black;
-		    margin-top: 25px;    /* エラーが出ても点線と被らないように余白を確保 */
+			border: none;
+			border-top: 1px dashed black;
+			margin-top: 25px;
 		}
-		
-		/* ★ 下のボタン用：左寄せのまま、上のテーブルの左端と縦のラインを合わせる */
-			.left-align-container {
+
+		.left-align-container {
 			display: flex;
 			justify-content: flex-start;
-			/* 左寄せ */
 			gap: 40px;
-			/* ボタン同士のすき間 */
 			margin-bottom: 15px;
 		}
 	</style>
 </head>
 
-<div>
-
+<body>
 	<div>
-		<h2> 勤務表</h2>
+		<h2>勤務表</h2>
 
 		<div class="shain-info">
-			<span> 社員名：</span>
-			<span> [[${shain.shainName}]]</span>
+			<span>社員名：</span>
+			<span>[[${shain.shainName}]]</span>
 		</div>
 
 		<form class="search-form" th:action="@{/attendance/management/worktable}" th:object="${WorkTableRequest}"
 			method="post" style="margin-top: 10px;">
 
 			<div class="flex-container">
-				<span> 対象年月： </span>
+				<span>対象年月：</span>
 
 				<div class="input-group">
 					<div class="input-row">
-					<input type="text" th:field="*{workYear}"> 年
-					</div><span class="error-message" th:if="${#fields.hasErrors('workYear')}" th:errors="*{workYear}"></span>
+						<input type="text" th:field="*{workYear}"> 年
+					</div>
+					<span class="error-message" th:if="${#fields.hasErrors('workYear')}" th:errors="*{workYear}"></span>
 				</div>
 
 				<div class="input-group">
 					<div class="input-row">
-					<input type="text" th:field="*{workMonth}"> 月
-					</div><span class="error-message" th:if="${#fields.hasErrors('workMonth')}"
+						<input type="text" th:field="*{workMonth}"> 月
+					</div>
+					<span class="error-message" th:if="${#fields.hasErrors('workMonth')}"
 						th:errors="*{workMonth}"></span>
 				</div>
 
 				<button type="submit">表示</button>
 			</div>
 		</form>
-		
-	<hr align=center color=black><br>
 
-	<table th:if="${workList}" border="1">
-		<tr>
-			<th>日付</th>
-			<th>曜日</th>
-			<th>出勤</th>
-			<th>退勤</th>
-			<th>残業時間</th>
-			<th>備考</th>
-			<th>勤務時間修正</th>
-		</tr>
-		<tr th:each="work : ${workList}"th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
-			<td th:text="${work.workDay}"></td>
-			<td th:text="${work.dayOfWeek}" th:style="${work.breakDay} ? 'color: red;' : 'color: black;'"></td>
-			<td th:text="${work.breakDay} ? '休み' : ${work.startTime}"></td>
-			<td th:text="${work.breakDay} ? null : ${work.endTime}"></td>
-			<td th:text="${work.minutes > 480 ? work.overTime : null}"></td>
-			<td th:text="${work.note}"></td>
-			<td>
-				<a th:href="@{/attendance/management/retouch(
-					workDay=${work.workDay}, 
-					startTime=${work.startTime}, 
-					endTime=${work.endTime}, 
-					note=${work.note}
-					)}" style="display: block; text-align: center; color: #0066cc; font-weight: bold;">修正</a>
+		<hr align="center"><br>
+
+		<div th:if="${errorMessage}">
+			<div>
+				<th:block><span style="color: red;">[[${errorMessage}]]</span></th:block>
+			</div>
+		</div>
+
+		<table th:if="${workList}" border="1">
+			<tr>
+				<th>日付</th>
+				<th>曜日</th>
+				<th>出勤</th>
+				<th>退勤</th>
+				<th>残業時間</th>
+				<th>備考</th>
+				<th>勤務変更</th>
+			</tr>
+			<tr th:each="work : ${workList}"
+				th:classappend="${work.minutes != null && work.minutes < 480 && work.minutes > 0} ? 'active' : ''">
+
+				<td th:text="${work.workDay}"></td>
+
+				<td th:text="${work.dayOfWeek}"
+					th:style="${work.breakDay || '有給'.equals(work.note)} ? 'color: red;' : 'color: black;'"></td>
+
+				<td th:text="${work.breakDay} ? '休み' : (${work.startTime} == '00:00' ? '' : ${work.startTime})"></td>
+				<td th:text="${work.breakDay} ? '' : (${work.endTime} == '00:00' ? '' : ${work.endTime})"></td>
+
+				<td th:text="${work.overTime}"></td>
+
+				<td th:text="${work.note}"></td>
+				<td>
+					<form th:action="@{/attendance/management/worktable/to-input}" method="post">
+						<input type="hidden" name="workYear" th:value="${WorkTableRequest.workYear}">
+						<input type="hidden" name="workMonth" th:value="${WorkTableRequest.workMonth}">
+						<input type="hidden" name="selectedDay" th:value="${work.workDay}">
+						<input type="submit"
+							style="display: inline-block; text-align: center; color: #0066cc; font-weight: bold; cursor: pointer; padding: 2px 10px;"
+							value="変更">
+					</form>
 				</td>
-		</tr>
-	</table>
-			
-	<div class="left-align-container">
-				<a th:href="@{/attendance/management/workinput}">勤務を追加</a>
-				<a id="admin-panel" th:if="${shain.shainName == '木曽原'}" th:href="@{/attendance/management/restore}">社員復旧</a>
-	</div>
+			</tr>
+		</table>
+		<form th:action="@{/attendance/management/to_worksubmission}" th:object="${WorkTableRequest}" method="post"
+			style="display: inline;">
+			<input type="hidden" th:field="*{workYear}">
+			<input type="hidden" th:field="*{workMonth}">
+			<input type="submit" value="確定申請">
+		</form>
 
+		<a id="admin-panel" th:if="${shain.loginId == 'kisohara'}" th:href="@{/attendance/management/restore}"
+			style="margin-left: 40px;">社員復旧</a>
+	</div>
 	<br>
 	<div><a th:href="@{/attendance/management/login}">ログアウト</a></div>
 
-	</body>
+</body>
 
 </html>

@@ -11,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.CreateWorkRequest;
@@ -32,26 +33,47 @@ public class WorkInputController {
 	 * @param redirect リダイレクト
 	 * @return /attendance/management/workinputの描写
 	 */
+	/**
+	 * /attendance/management/workinputの描写メソッド
+	 */
 	@GetMapping(value = "/attendance/management/workinput")
-	public String display(@ModelAttribute CreateWorkRequest request, Model model, HttpSession session,
-			RedirectAttributes redirect) {
-		//sessionの確認
-		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
-				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認
+	public String display(
+			Model model,
+			HttpSession session,
+			RedirectAttributes redirect,
+			@RequestParam(value = "workYear", required = false) String year,
+			@RequestParam(value = "workMonth", required = false) String month,
+			@RequestParam(value = "selectedDay", required = false) String dayStr) { // selectedDay で安全に受け取る
+
+		// セッションの確認
+		boolean isKeepingSession = Collections.list(session.getAttributeNames())
+				.stream().anyMatch(x -> "loginShain".equals(x));
 		if (!isKeepingSession) {
 			LogUtil.warn("W99999");
-
 			redirect.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
+			return "redirect:/attendance/management/login";
+		}
+		CreateWorkRequest createWorkRequest = new CreateWorkRequest();
 
-			return "redirect:/attendance/management/login"; // 最初のページへ
+		// 安全に年・月・日を結合して LocalDate を組み立てる
+		if (year != null && month != null && dayStr != null) {
+			try {
+				int y = Integer.parseInt(year);
+				int m = Integer.parseInt(month);
+				int d = Integer.parseInt(dayStr);
+
+				// ここで安全に LocalDate 型をセット（400エラーの発生源を根本から遮断）
+				createWorkRequest.setWorkDay(java.time.LocalDate.of(y, m, d));
+			} catch (Exception e) {
+				LogUtil.warn("日付の組み立てに失敗しました: {}-{}-{}", year, month, dayStr);
+			}
 		}
 
-		//ログ出力
-		LogUtil.info("[{}]:Display \"/attendance/management/workinput\", session=[{}]",
-				WorkInputController.class.getSimpleName(), session.getAttribute("loginShain"));
-
-		//ログイン社員をmodelに詰める
 		model.addAttribute("loginShain", session.getAttribute("loginShain"));
+
+		// ★ HTMLの th:object="${createWorkRequest}" に渡す
+		model.addAttribute("createWorkRequest", createWorkRequest);
+
 		return "attendance/management/workinput";
 	}
 

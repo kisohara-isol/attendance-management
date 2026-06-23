@@ -40,5 +40,10 @@ public class ShainData {
 	 * <li>1: ログイン失敗3回などによるアカウントロック状態</li>
 	 * </ul>
 	 */
-	private int stopFlg = 0;
+	private int stopFlg ;
+	
+	/**
+	 * 失敗回数
+	 * */
+	private int failureCount;
 }

@@ -26,7 +26,7 @@
 			align-items: center;
 			margin-bottom: 20px;
 			margin-left: 0px;
-			flex-wrap: wrap; 
+			flex-wrap: wrap;
 			gap: 12px;
 		}
 
@@ -54,9 +54,11 @@
 		<form th:action="@{/attendance/management/workinput}" th:object="${createWorkRequest}" method="post">
 			<div class="form-row">
 				<label>日付：</label>
-				<input type="text" th:field="*{workDay}" />
-				<span>(YYYYMMDD で入力)</span>
-				<button type="button" onclick="getToday()">今日の日付を入力</button>
+
+				<span th:text="${createWorkRequest.workDay}"></span>
+
+				<input type="hidden" id="workDay" th:field="*{workDay}">
+
 				<div class="error-message">
 					<th:block th:if="${#fields.hasErrors('workDay')}" th:errors="*{workDay}"></th:block>
 				</div>
@@ -88,7 +90,7 @@
 				</div>
 			</div>
 
-			<div >
+			<div>
 				<button type="submit">確認</button>
 			</div>
 		</form>

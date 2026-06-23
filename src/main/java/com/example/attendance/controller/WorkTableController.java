@@ -1,7 +1,11 @@
 package com.example.attendance.controller;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -14,79 +18,68 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.WorkTableRequest;
 import com.example.attendance.entity.AttendanceData;
 import com.example.attendance.entity.ShainData;
+import com.example.attendance.repository.WorkTableMapper;
 import com.example.attendance.service.WorkTableService;
 import com.example.attendance.util.LogUtil;
 
 /**
  * 勤務表照会画面の表示およびデータ検索リクエストを制御するコントローラークラス。
- * <p>
- * ログインセッションのチェック、入力値のバリデーション、 およびサービス層を介した勤務表データの取得と画面へのマッピングを行います。
- * </p>
- * * @author Hagiawra
  */
 @Controller
 public class WorkTableController {
 
 	@Autowired
 	private WorkTableService workTableService;
+	@Autowired
+	private WorkTableMapper workTableMapper;
 
 	/**
-	 * 勤務表照会ページの初期表示、および再表示を行います。
-	 * <p>
-	 * アクセス時にセッションチェックを行い、有効なセッションが存在しない場合はログイン画面へリダイレクトします。
-	 * セッションが有効な場合は、ログイン社員情報を画面に反映して勤務表照会画面を表示します。
-	 * </p>
-	 *
-	 * @param model   画面へデータを渡すためのModelオブジェクト
-	 * @param session ログイン状態を検証するためのHTTPセッション
-	 * @param request 検索条件を保持するリクエストDTO
-	 * @return 遷移先のテンプレート名、またはログイン画面へのリダイレクトパス
+	 * 勤務表照会ページの初期表示（当月）を行います。
 	 */
 	@GetMapping(value = "/attendance/management/worktable")
-	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest request) {
+	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest request,
+			@RequestParam(value = "Year", required = false, defaultValue = "0") int workYear,
+			@RequestParam(value = "Month", required = false, defaultValue = "0") int workMonth) {
 
 		LogUtil.info("勤務表照会ページに飛びました。");
-		
-		LocalDate ld = LocalDate.now();
-		int year = ld.getYear();
-		int month = ld.getMonthValue();
-		
-		request.setWorkYear(String.valueOf(year));
-		request.setWorkMonth(String.valueOf(month));
-		
-		model.addAttribute("WorkTableRequest", request);
 
-		// セッションからユーザー情報を取得・反映
+		// セッションからユーザー情報を取得
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
 
-//		セッション切れの場合
+		// セッション切れチェック
 		if (session == null || shain == null) {
 			LogUtil.warn("W99999");
 			return "redirect:/attendance/management/login";
-		} else {
-			// 反映させる
-			model.addAttribute("shain", shain);
-			return "attendance/management/worktable";
 		}
+		model.addAttribute("shain", shain);
+
+		int year = workYear;
+		int month = workMonth;
+
+		if (year == 0 || month == 0) {
+			LocalDate ld = LocalDate.now();
+			year = ld.getYear();
+			month = ld.getMonthValue();
+		}
+
+		request.setWorkYear(String.valueOf(year));
+		request.setWorkMonth(String.valueOf(month));
+		model.addAttribute("WorkTableRequest", request);
+
+		List<AttendanceData> calendarList = generateMonthlyCalendar(shain.getShainId(), year, month);
+		model.addAttribute("workList", calendarList);
+
+		return "attendance/management/worktable";
 	}
 
 	/**
-	 * 指定された年月の勤務表データを検索し、照会画面へ反映します。
-	 * <p>
-	 * 入力された年月の未入力チェック、型チェック、および範囲チェック（月が1〜12であるか）を行い、
-	 * すべてのチェックを通過した場合、ログイン社員のIDを基に勤務表リストを取得します。
-	 * </p>
-	 *
-	 * @param model         画面へデータを渡すためのModelオブジェクト
-	 * @param request       入力された検索条件（年・月）を保持するリクエストDTO
-	 * @param bindingResult 単項目チェック（相関チェック）の判定結果
-	 * @param session       ログイン社員情報を取得するためのHTTPセッション
-	 * @return 自画面へのパス、またはセッション切れ時のログイン画面へのパス
+	 * 指定された年月の勤務表データを検索し、カレンダー形式で表示します。
 	 */
 	@PostMapping(value = "/attendance/management/worktable")
 	public String table(Model model, @Validated @ModelAttribute("WorkTableRequest") WorkTableRequest request,
@@ -94,9 +87,7 @@ public class WorkTableController {
 
 		LogUtil.info("入力処理を開始します。");
 
-		// セッションからユーザー情報を取得・反映
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
-//		セッション切れの場合
 		if (session == null || shain == null) {
 			LogUtil.warn("W99999");
 			return "attendance/management/login";
@@ -106,59 +97,157 @@ public class WorkTableController {
 		String workYear = request.getWorkYear();
 		String workMonth = request.getWorkMonth();
 
-		// 年月が空欄だった場合メッセージを表示する
+		// 単項目バリデーション（@Min, @Max, @NotBlank などDTO側のチェック）のエラーハンドリング
 		if (bindingResult.hasErrors()) {
-			// 入力値が不正だった理由を取得
 			String errorMessage = "";
 			for (ObjectError oe : bindingResult.getAllErrors()) {
 				errorMessage += oe.getDefaultMessage();
 			}
-			// ログに流す
-			if (errorMessage.contains("年を入力してください。")) {
+			if (errorMessage.contains("2020～9999 までの年を入力してください。"))
 				LogUtil.warn("W20001");
-			}
-			if (errorMessage.contains("月を入力してください。")) {
+			if (errorMessage.contains("月を入力してください。"))
 				LogUtil.warn("W20002");
-			}
 			return "attendance/management/worktable";
 		}
 
-		// 年の値が不正か調べる
+		int year;
+		int month;
+
+		// 1. 年のパースと範囲チェック
 		try {
-			int year = Integer.parseInt(workYear);
+			year = Integer.parseInt(workYear);
 		} catch (NumberFormatException e) {
 			bindingResult.rejectValue("workYear", "error.workYear", "YYYY形式で入力してください。");
 			LogUtil.warn("W20003");
 			return "attendance/management/worktable";
 		}
-		// 月の値が不正か調べる(数字以外ならエラー)
+
+		// 💡【追加】2020年から9999年の範囲外だった場合のエラーハンドリング
+		if (year < 2020 || 9999 < year) {
+			bindingResult.rejectValue("workYear", "error.workYear", "2020～9999 までの年を入力してください。");
+			LogUtil.warn("W20001"); // W20001の警告ログを出力
+			return "attendance/management/worktable";
+		}
+
+		// 2. 月のパースと範囲チェック
 		try {
-			int month = Integer.parseInt(workMonth);
+			month = Integer.parseInt(workMonth);
 		} catch (NumberFormatException e) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
 			LogUtil.warn("W20004");
 			return "attendance/management/worktable";
 		}
-		// 月の値が不正か調べる(1～12の数字)
-		if (Integer.parseInt(workMonth) < 1 || 12 < Integer.parseInt(workMonth)) {
+
+		if (month < 1 || 12 < month) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
 			LogUtil.warn("W20004");
 			return "attendance/management/worktable";
 		}
 
-//		// 勤務表を取得・反映
-		List<AttendanceData> workList = workTableService.getAttendanceList(shain.getShainId(),
-				Integer.parseInt(workYear), Integer.parseInt(workMonth));
+		List<AttendanceData> calendarList = generateMonthlyCalendar(shain.getShainId(), year, month);
+		model.addAttribute("workList", calendarList);
 
-		// 返却内容がない場合表示させない
-		if (workList.isEmpty()) {
-			model.addAttribute("workList", null);
-			LogUtil.info("社員ID:{}の{}年{}月の勤務表はありませんでした。", shain.getShainId(), workYear, workMonth);
-		} else {
-			model.addAttribute("workList", workList);
-			LogUtil.debug("社員ID:{}の{}年{}月の勤務表を取得しました。", shain.getShainId(), workYear, workMonth);
-		}
 		return "attendance/management/worktable";
 	}
 
+	/**
+	 * 変更ボタンを押された時の処理。
+	 */
+	@PostMapping(value = "/attendance/management/worktable/to-input")
+	public String input(Model model, @ModelAttribute("WorkTableRequest") WorkTableRequest request,
+			HttpSession session, RedirectAttributes redirectAttributes) {
+
+		jakarta.servlet.http.HttpServletRequest req = ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
+				.getRequestAttributes()).getRequest();
+		String selectedDay = req.getParameter("selectedDay");
+
+		redirectAttributes.addAttribute("workYear", request.getWorkYear());
+		redirectAttributes.addAttribute("workMonth", request.getWorkMonth());
+		redirectAttributes.addAttribute("selectedDay", selectedDay);
+
+		return "redirect:/attendance/management/workinput";
+	}
+
+	/**
+	 * 確定申請ボタンを押下で勤怠確定確認画面へ遷移
+	 */
+	@PostMapping(value = "/attendance/management/to_worksubmission")
+	public String confirm(RedirectAttributes redirectAttributes,
+			@ModelAttribute("WorkTableRequest") WorkTableRequest request, HttpSession session, Model model) {
+
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
+
+		String year = request.getWorkYear();
+		String month = request.getWorkMonth();
+
+		int totalDaysInMonth = java.time.YearMonth.of(Integer.parseInt(year), Integer.parseInt(month)).lengthOfMonth();
+
+		int registeredDays = workTableMapper.countRegisteredDays(shain.getShainId(), year,
+				String.format("%02d", Integer.parseInt(month)));
+
+		if (registeredDays < totalDaysInMonth) {
+			redirectAttributes.addFlashAttribute("errorMessage", "すべての日の勤務入力が完了していません。");
+			return "redirect:/attendance/management/worktable";
+		}
+
+		redirectAttributes.addAttribute("Year", request.getWorkYear());
+		redirectAttributes.addAttribute("Month", request.getWorkMonth());
+
+		return "redirect:/attendance/management/worksubmission";
+	}
+
+	/**
+	 * 💡 カレンダーのマス目にデータを安全にマッピングする処理
+	 */
+	private List<AttendanceData> generateMonthlyCalendar(int shainId, int year, int month) {
+		List<AttendanceData> dbWorkList = workTableService.getAttendanceList(shainId, year, month);
+		List<AttendanceData> fullMonthList = new ArrayList<>();
+
+		YearMonth yearMonth = YearMonth.of(year, month);
+		LocalDate firstDay = yearMonth.atDay(1);
+		LocalDate lastDay = yearMonth.atEndOfMonth();
+
+		for (LocalDate date = firstDay; !date.isAfter(lastDay); date = date.plusDays(1)) {
+			int dayNum = date.getDayOfMonth();
+			String dayOfWeekKanji = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.JAPANESE);
+
+			AttendanceData targetData = null;
+			for (AttendanceData dbData : dbWorkList) {
+				if (dbData.getWorkDay() != null) {
+					String cleanDayStr = dbData.getWorkDay().replaceAll("[^0-9]", "");
+
+					if (cleanDayStr.length() >= 2) {
+						int dbDay = Integer.parseInt(cleanDayStr.substring(cleanDayStr.length() - 2));
+						if (dbDay == dayNum) {
+							targetData = dbData;
+							break;
+						}
+					} else if (!cleanDayStr.isEmpty()) {
+						if (Integer.parseInt(cleanDayStr) == dayNum) {
+							targetData = dbData;
+							break;
+						}
+					}
+				}
+			}
+
+			if (targetData != null) {
+				targetData.setWorkDay(String.valueOf(dayNum));
+				targetData.setDayOfWeek(dayOfWeekKanji);
+				fullMonthList.add(targetData);
+			} else {
+				AttendanceData emptyData = new AttendanceData();
+				emptyData.setWorkDay(String.valueOf(dayNum));
+				emptyData.setDayOfWeek(dayOfWeekKanji);
+				emptyData.setStartTime("");
+				emptyData.setEndTime("");
+				emptyData.setOverTime("");
+				emptyData.setNote("");
+				emptyData.setBreakDay(false);
+				fullMonthList.add(emptyData);
+			}
+		}
+
+		return fullMonthList;
+	}
 }

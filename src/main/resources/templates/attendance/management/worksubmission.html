@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>勤務表提出画面</title>
+	<meta name="author" content="Soeda">
+</head>
+
+<body>
+	<h1>勤務表提出画面</h1>
+
+	<form th:action="@{/attendance/management/worksubmission}" th:object="${attendanceInfo}" th:method="post">
+
+		<div>
+			<label for="mustDay">出勤対象日数：</label>
+			<span id="mustDay" th:text="*{mustDay}">0</span>日
+		</div>
+		<br>
+
+		<div>
+			<label for="attendanceDay">勤務日数：</label>
+			<span id="attendanceDay" th:text="*{attendanceDay}">0</span>日
+		</div>
+		<br>
+
+		<div>
+			<label for="paidHoliDay">有給：</label>
+			<span id="paidHoliDay" th:text="*{paidHoliDay}">0</span>日
+		</div>
+		<br>
+
+		<div>
+			<label for="salary">総支給額：</label>
+			<span id="salary" th:text="*{salary}">0</span>円
+		</div>
+	</form>
+	<br>
+
+	<div style="display: flex; gap: 12px;">
+
+		<form th:action="@{/attendance/management/toworkcomlete}" method="post" style="margin: 0;">
+			<input type="hidden" name="Year" th:value="${param.Year}" />
+			<input type="hidden" name="Month" th:value="${param.Month}" />
+			<input type="hidden" name="attendanceDate" th:value="${attendanceInfo.attendanceDay}" />
+			<input type="hidden" name="salary" th:value="${attendanceInfo.salary}" />
+			<button type="submit">確定</button>
+		</form>
+
+		<a th:href="@{/attendance/management/worktable(Year=${param.Year}, Month=${param.Month})}">
+			<button type="button">戻る</button>
+		</a>
+
+	</div>
+</body>
+
+</html>

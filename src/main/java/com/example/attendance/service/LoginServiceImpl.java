@@ -1,9 +1,5 @@
 package com.example.attendance.service;
 
-/**
- * @author Soeda
- * */
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,59 +18,46 @@ public class LoginServiceImpl implements LoginService {
 	@Autowired
 	private ShainDataMapper shainDataMapper;
 
-	/**
-	 * ログイン時失敗した回数をアカウントごとに格納するmap
-	 * */
 	private final Map<String, Integer> errorMap = new HashMap<>();
 
-	/**
-	 * ログインの判定と、失敗時のロック処理をすべて行う
-	 * * @param loginId  画面から入力されたID
-	 * @param password 画面から入力されたパスワード
-	 * @return 判定結果のステータスコード（0:失敗, 1:成功, 2:ロック中, 3:今回でロックされた,4:アカウントが存在しない,5:DB接続エラー）
-	 */
 	@Override
-	@Transactional // DB更新を伴うため、Service層に付けるのが最適です
+	@Transactional
 	public int loginJudge(String loginId, String password) {
 
 		ShainData shain = null;
 
-		//DBに接続できているか
 		try {
-
-			// 1. まず入力されたIDで社員が存在するか確認
 			shain = getShainById(loginId);
-			//shainDataMapper.selectShainDataがないため実際はIDとパスワードセットで検索は行えていない。
-
 		} catch (DataAccessException e) {
-
-			return 5; // 
+			return 5;
 		}
 
-		// 社員が存在しない場合は、認証失敗(4)を返す
 		if (shain == null) {
-			return 4;
+			return 4; // アカウントが存在しない
 		}
 
-		// 2. すでにアカウントがロックされている（stopFlgが1）か確認
+		// 💡【最重要：ガードロジック】
+		// すでにフラグが立っている（stopFlg == 1）ときは、これ以上 failureCount を増やさないよう即座に終了する
 		if (shain.getStopFlg() == 1) {
-			return 2; // すでにロック中
+			return 2; // すでにロック中（failure_count は 3 のまま固定されます）
 		}
 
-		// 3. パスワードの照合
+		// パスワードの照合
 		if (shain.getPassword().equals(password)) {
-			// ログイン成功
-			errorMap.clear();//ログイン成功時errorMapを完全にリセット
-
+			// ログイン成功：失敗カウントとロック状態をクリーンにリセット
+			shain.setFailureCount(0);
+			shain.setStopFlg(0);
+			shainDataMapper.updateFailureCount(shain);
+			shainDataMapper.updateShainData(shain); // 必要に応じてstopFlgも安全のためリセット
+			errorMap.clear();
 			return 1;
 		} else {
-			// パスワード間違い（ログイン失敗）
+			// パスワード間違い（失敗カウントを1増やす）
+			int errorCounts = shain.getFailureCount() + 1;
+			shain.setFailureCount(errorCounts);
+			shainDataMapper.updateFailureCount(shain);
 
-			//Mapから失敗回数を取得、一度も間違えていなければ0を設定
-			int errorCounts = errorMap.getOrDefault(loginId, 0) + 1;
-			errorMap.put(loginId, errorCounts);
-
-			// 3回連続で間違えたらアカウントをロックする
+			// 3回になったら stopFlg を 1 にする
 			if (errorCounts >= 3) {
 				shain.setStopFlg(1);
 				try {
@@ -86,28 +69,23 @@ public class LoginServiceImpl implements LoginService {
 				return 3; // 今回の失敗で新しくロックされた
 			}
 
-			return 0; // 通常のログイン失敗
+			return 0; // 通常のログイン失敗（1回目、2回目）
 		}
 	}
 
-	/**
-	 * 残り試行回数を取得する（Controller側でメッセージに表示するため）
-	 */
 	@Override
 	public int getRemainingAttempts(String loginId) {
-		//Mapから失敗回数を取得、一度も間違えていなければ0を設定
-		int errorCounts = errorMap.getOrDefault(loginId, 0);
-		return 3 - errorCounts;
+		ShainData shain = getShainById(loginId);
+		if (shain == null) {
+			return 3;
+		}
+		int errorCounts = shain.getFailureCount();
+		int remaining = 3 - errorCounts;
+		return remaining < 0 ? 0 : remaining;
 	}
 
-	
-	/**
-	 *ログインIDから社員情報を取得する。
-	 */
 	@Override
 	public ShainData getShainById(String loginId) {
-
 		return shainDataMapper.selectShainById(loginId);
-
 	}
 }
