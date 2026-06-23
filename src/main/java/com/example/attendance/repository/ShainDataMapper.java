@@ -70,10 +70,17 @@ public interface ShainDataMapper {
 	void updateShainData(ShainData shain);
 	
 	/**
-	 * 引数で渡された社員IDに対応するアカウントのstop_flgを0にリセット(アップデート)します。
-	 * @param shainId 対象となる社員ID
+	 * 引数で渡された社員IDに対応するアカウントのfailure_countを0にアップデートします。
 	 * @return 更新に成功した数<br>正しく実行されれば1であることが期待される
 	 */
-	@Update("UPDATE shain_data SET stop_flg = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
+	@Update("UPDATE shain_data SET failure_count = 0 WHERE shain_id = #{shainId} AND stop_flg = 1")
 	int resetStopFlugByShainId(@Param("shainId") int shainId);
+	
+	/**
+	 * 引数で渡された社員IDに対応するアカウントのfailure_countを、引数で渡された失敗回数の数にアップデートします。
+	 * @param failureCount 失敗回数
+	 * @param shainId 対象となる社員ID
+	 */
+	@Update("UPDATE shain_data SET failure_count = #{failureCount} WHERE shain_id = #{shainId}")
+	void updateFailureCount(@Param("failureCount") int failureCount, @Param("shainId") int shainId);
 }

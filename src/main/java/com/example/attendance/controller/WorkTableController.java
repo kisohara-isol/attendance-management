@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.WorkTableRequest;
@@ -48,18 +49,21 @@ public class WorkTableController {
 	 * @return 遷移先のテンプレート名、またはログイン画面へのリダイレクトパス
 	 */
 	@GetMapping(value = "/attendance/management/worktable")
-	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest request) {
+	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest workTableRequest) {
 
 		LogUtil.info("勤務表照会ページに飛びました。");
-		
+
 		LocalDate ld = LocalDate.now();
 		int year = ld.getYear();
 		int month = ld.getMonthValue();
-		
-		request.setWorkYear(String.valueOf(year));
-		request.setWorkMonth(String.valueOf(month));
-		
-		model.addAttribute("WorkTableRequest", request);
+
+		workTableRequest.setWorkYear(String.valueOf(year));
+		workTableRequest.setWorkMonth(String.valueOf(month));
+
+		model.addAttribute("WorkTableRequest", workTableRequest);
+
+		model.addAttribute("year", year);
+		model.addAttribute("month", month);
 
 		// セッションからユーザー情報を取得・反映
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
@@ -146,19 +150,87 @@ public class WorkTableController {
 			return "attendance/management/worktable";
 		}
 
-//		// 勤務表を取得・反映
-		List<AttendanceData> workList = workTableService.getAttendanceList(shain.getShainId(),
-				Integer.parseInt(workYear), Integer.parseInt(workMonth));
+		int year = Integer.parseInt(workYear);
+		int month = Integer.parseInt(workMonth);
 
-		// 返却内容がない場合表示させない
-		if (workList.isEmpty()) {
-			model.addAttribute("workList", null);
-			LogUtil.info("社員ID:{}の{}年{}月の勤務表はありませんでした。", shain.getShainId(), workYear, workMonth);
-		} else {
-			model.addAttribute("workList", workList);
-			LogUtil.debug("社員ID:{}の{}年{}月の勤務表を取得しました。", shain.getShainId(), workYear, workMonth);
-		}
+//		// DBから勤務表を取得・反映
+		List<AttendanceData> workList = workTableService.getCalendar(shain.getShainId(), year, month);
+
+		model.addAttribute("workList", workList);
+		
+		model.addAttribute("year", year);
+		model.addAttribute("month", month);
+
 		return "attendance/management/worktable";
+	}
+
+	@PostMapping(value = "/attendance/management/workchange")
+	public String change(Model model, @RequestParam("workDay") String workDay,
+			@RequestParam(value = "startTime") String startTime,
+			@RequestParam(value = "endTime") String endTime, @RequestParam(value = "note") String note,
+			@RequestParam(value = "isRegistration") boolean isRegistration, HttpSession session, RedirectAttributes redirectAttributes) {
+
+		// セッションからユーザー情報を取得・反映
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
+//				セッション切れの場合
+		if (session == null || shain == null) {
+			LogUtil.warn("W99999");
+			return "attendance/management/login";
+		}
+		model.addAttribute("shain", shain);
+
+		redirectAttributes.addFlashAttribute("oldWorkDay", workDay);
+		redirectAttributes.addFlashAttribute("oldStartTime", startTime);
+		redirectAttributes.addFlashAttribute("oldEndTime", endTime);
+		redirectAttributes.addFlashAttribute("oldNote", note);
+		redirectAttributes.addFlashAttribute("isRegistration", isRegistration);
+
+		return "redirect:/attendance/management/retouch";
+	}
+
+	@PostMapping(value = "/attendance/management/worksubmit")
+	public String submitWorkTable(
+			Model model, HttpSession session, RedirectAttributes redirectAttributes,
+			@RequestParam("year") int year, 
+			@RequestParam("month") int month) {
+		LogUtil.info("勤務表の一括提出処理を開始します。");
+		
+		// セッションからユーザー情報を取得・反映
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
+//						セッション切れの場合
+		if (session == null || shain == null) {
+			LogUtil.warn("W99999");
+			return "attendance/management/login";
+		}
+		model.addAttribute("shain", shain);
+
+		// DBから勤務表を取得
+		List<AttendanceData> submittedList = workTableService.getCalendar(shain.getShainId(), year, month);
+
+		// 休みでないかつ勤務を提出していない日があったら提出できない
+		for (AttendanceData ad : submittedList) {
+			if(!ad.isBreakDay()) {
+				if(!ad.isRegistration()) {
+					LogUtil.warn("全ての勤怠を提出していません。");
+					model.addAttribute("workList", submittedList);
+					model.addAttribute("message", "全ての勤怠を提出していません。");
+					
+					// 入力欄に今の年月ではなく、勤務表を提出した年月をセットしておく
+					WorkTableRequest tableRequest = new WorkTableRequest();
+					
+					tableRequest.setWorkYear(String.valueOf(year));
+					tableRequest.setWorkMonth(String.valueOf(month));
+					
+					model.addAttribute("WorkTableRequest", tableRequest);
+					
+					return "attendance/management/worktable";
+				}
+			}
+		}
+		// 提出画面に送る
+		redirectAttributes.addFlashAttribute("submittedList", submittedList);
+		
+		return "redirect:/attendance/management/worksubmission";
 	}
 
 }

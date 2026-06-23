@@ -29,7 +29,7 @@ public class AttendanceData {
 	private LocalTime startTime;
 	
 	/** 退勤時刻（時:分） */
-	private LocalTime endTime;
+	private String endTime;
 	
 	/** 当日の総勤務時間（分数単位） */
 	private long minutes;
@@ -43,6 +43,15 @@ public class AttendanceData {
 	/** 定時を超過した残業時間（フォーマット済みの文字列 例: " 1:30"） */
 	private String overTime;
 	
+	/** 残業時間(分) */
+	private long overMinutes;
+	
+	/** 足りなかった時間 */
+	private long lackTime;
+	
 	/** 出勤日の曜日（例: "月", "火"） */
 	private String dayOfWeek;
+	
+	/** 勤怠が登録されているかどうか */
+	private boolean isRegistration;
 }

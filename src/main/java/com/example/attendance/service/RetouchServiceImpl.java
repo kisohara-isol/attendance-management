@@ -39,8 +39,13 @@ public class RetouchServiceImpl implements RetouchService {
 	 * @param memo     変更前の備考（レコード特定用）
 	 */
 	@Override
-	public void retouchAttendance(LocalTime newStart, LocalTime newEnd, String newNote, int shainId, LocalDate workday,
-			LocalTime start, LocalTime end, String memo) {
+	public void retouchAttendance(LocalTime newStart, String newEnd, String newNote, int shainId, LocalDate workday,
+			LocalTime start, String end, String memo) {
 		mapper.updateAttendanceTable(newStart, newEnd, newNote, shainId, workday, start, end, memo);
+	}
+	
+	@Override
+	public void addAttendance(int shainId, LocalDate workDay, LocalTime startTime, String endTime, String note) {
+		mapper.insertAttendanceTable(shainId, workDay, startTime, endTime, note);
 	}
 }

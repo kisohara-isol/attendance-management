@@ -41,4 +41,9 @@ public class ShainData {
 	 * </ul>
 	 */
 	private int stopFlg = 0;
+	
+	/**
+	 * ログイン失敗回数
+	 * */
+	private int failureCount;
 }

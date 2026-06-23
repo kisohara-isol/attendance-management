@@ -27,6 +27,8 @@ public interface RetouchService {
 	 * @param end      変更前の退勤時間（レコード特定用）
 	 * @param memo     変更前の備考（レコード特定用）
 	 */
-	void retouchAttendance(LocalTime newStart, LocalTime newEnd, String newNote, int shainId, LocalDate workday,
-	LocalTime start, LocalTime end, String memo);
+	void retouchAttendance(LocalTime newStart, String newEnd, String newNote, int shainId, LocalDate workday,
+	LocalTime start, String end, String memo);
+	
+	void addAttendance(int shainId, LocalDate workDay, LocalTime startTime, String endTime, String note);
 }
