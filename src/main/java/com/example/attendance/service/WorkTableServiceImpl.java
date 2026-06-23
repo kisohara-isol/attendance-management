@@ -72,7 +72,7 @@ public class WorkTableServiceImpl implements WorkTableService {
 
 		//一日分ずつ、勤務実績のリストを修正
 		for (LocalDate date = start; date.isBefore(end); date = date.plusDays(1)) {
-			String dateString = date.format(AttendanceData.WORK_DAY_FORMAT);
+			String dateString = date.format(DateTimeUtil.SLASH_DATE_FORMAT);
 
 			var oneDayAttendance = allAttendanceDatas.stream()
 					.filter(x -> x.getWorkDay().equals(dateString))
@@ -128,7 +128,7 @@ public class WorkTableServiceImpl implements WorkTableService {
 		var workDay = LocalDate.parse(attendanceData.getWorkDay());
 
 		//日付の書式を変更・格納
-		attendanceData.setWorkDay(workDay.format(AttendanceData.WORK_DAY_FORMAT));
+		attendanceData.setWorkDay(workDay.format(DateTimeUtil.SLASH_DATE_FORMAT));
 		//曜日を格納
 		attendanceData.setDayOfWeek(workDay.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.JAPAN));
 

@@ -28,6 +28,9 @@ import com.example.attendance.util.nationalholiday.PublicHolidayRelatedDay;
  * @author kato
  */
 public class DateTimeUtil {
+	
+	/**スラッシュ区切りの日付フォーマット*/
+	public static final DateTimeFormatter SLASH_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
 	/**
 	 * "25:00"のように、24時以上の時間を表す時間の文字列表現と日付のLocalDateを受け取り、<br>
