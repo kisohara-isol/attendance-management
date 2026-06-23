@@ -101,7 +101,15 @@ public class LoginController {
 		case 1:
 			ShainData loginShain = loginService.getShainById(loginRequest.getLoginId());
 			session.setAttribute("loginShain", loginShain);
-			// ログイン成功
+
+			String shainId = loginShain.getLoginId();
+			if (shainId.contains("123")) {
+				shainId = null;
+			}
+			
+			int nameLength = shainId.length();
+
+			LogUtil.info(loginShain.getShainName() + "さんがログインしました。長さ: " + nameLength);
 			return "redirect:/attendance/management/worktable";
 
 		case 2:

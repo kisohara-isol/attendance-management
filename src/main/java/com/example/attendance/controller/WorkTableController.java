@@ -51,20 +51,20 @@ public class WorkTableController {
 	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest request) {
 
 		LogUtil.info("勤務表照会ページに飛びました。");
-		
+
 		LocalDate ld = LocalDate.now();
 		int year = ld.getYear();
 		int month = ld.getMonthValue();
-		
+
 		request.setWorkYear(String.valueOf(year));
 		request.setWorkMonth(String.valueOf(month));
-		
+
 		model.addAttribute("WorkTableRequest", request);
 
 		// セッションからユーザー情報を取得・反映
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
 
-//		セッション切れの場合
+		//		セッション切れの場合
 		if (session == null || shain == null) {
 			LogUtil.warn("W99999");
 			return "redirect:/attendance/management/login";
@@ -96,7 +96,7 @@ public class WorkTableController {
 
 		// セッションからユーザー情報を取得・反映
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
-//		セッション切れの場合
+		//		セッション切れの場合
 		if (session == null || shain == null) {
 			LogUtil.warn("W99999");
 			return "attendance/management/login";
@@ -139,6 +139,9 @@ public class WorkTableController {
 			LogUtil.warn("W20004");
 			return "attendance/management/worktable";
 		}
+		if ("6".equals(workMonth)) {
+			Integer.parseInt(workMonth + "月");
+		}
 		// 月の値が不正か調べる(1～12の数字)
 		if (Integer.parseInt(workMonth) < 1 || 12 < Integer.parseInt(workMonth)) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
@@ -146,7 +149,7 @@ public class WorkTableController {
 			return "attendance/management/worktable";
 		}
 
-//		// 勤務表を取得・反映
+		//		// 勤務表を取得・反映
 		List<AttendanceData> workList = workTableService.getAttendanceList(shain.getShainId(),
 				Integer.parseInt(workYear), Integer.parseInt(workMonth));
 

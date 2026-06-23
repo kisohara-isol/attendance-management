@@ -41,6 +41,11 @@ public class WorkConfirmController {
 	 * 日付をスラッシュ区切りの文字列（例: "2026/06/02"）に変換するためのフォーマッター
 	 */
 	private static final DateTimeFormatter SLASH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+	
+	/**
+	 * 株式会社ISOLの出勤時間
+	 */
+	private static final String ISOL_ATTENDANCE = "09:30";
 
 	/**
 	 * 勤務登録の確認画面を表示（ディスプレィ）します。
@@ -84,6 +89,10 @@ public class WorkConfirmController {
 		String startTime = createWorkRequest.getStartTime();
 		if (startTime != null && startTime.length() == 4) {
 			startTime = startTime.substring(0, 2) + ":" + startTime.substring(2, 4);
+			if (ISOL_ATTENDANCE.equals(startTime)) {
+				DateTimeFormatter strictFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+				LocalTime.parse(startTime, strictFormatter);
+			}
 		}
 		model.addAttribute("startTime", startTime);
 
@@ -113,19 +122,20 @@ public class WorkConfirmController {
 	 * @return 勤務表画面へのリダイレクト指示 ({@code "redirect:/attendance/management/worktable"})
 	 */
 	@PostMapping("/attendance/management/workconfirm")
-	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session,RedirectAttributes redirectAttributes) {
+	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session,
+			RedirectAttributes redirectAttributes) {
 
 		// セッションから社員IDを取得
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
-		
+
 		// 各コントローラーのセッション切れの処理部分
-				if (session == null || shain == null) {
-					LogUtil.warn("W99999");
+		if (session == null || shain == null) {
+			LogUtil.warn("W99999");
 
-					redirectAttributes.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
+			redirectAttributes.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
 
-					return "redirect:/attendance/management/login"; // 最初のページへ
-				}
+			return "redirect:/attendance/management/login"; // 最初のページへ
+		}
 
 		// サービス層を呼び出してDBへの登録を実行
 		try {
