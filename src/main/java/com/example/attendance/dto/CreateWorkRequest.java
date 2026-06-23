@@ -1,7 +1,6 @@
 package com.example.attendance.dto;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -33,9 +32,11 @@ public class CreateWorkRequest {
 	@Pattern(regexp="^(([0,1][0-9]|2[0-3])[0-5][0-9]|休み)?$", message = "{W30004}") //許容する値は「[0-24][0-59]」or「休み」or「空白」。三つめはNotEmptyのほうに引っかかる
 	private String startTime;
 	
-	/**「退勤時間(HHMM)」もしくはnull*/
-	@DateTimeFormat(pattern = "HHmm")
-	private LocalTime endTime;
+	/**
+	 * 「退勤時間(HHMM)」もしくはnull<br>
+	 * 24時間以上の値を許容する
+	 */
+	private String endTime;
 	
 	/**備考*/
 	private String note;

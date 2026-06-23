@@ -55,7 +55,7 @@ public interface ShainDataMapper {
 			@Param("shainId") int shainId,
 			@Param("workDay") LocalDate workDay,
 			@Param("startTime") LocalTime startTime,
-			@Param("endTime") LocalTime endTime,
+			@Param("endTime") String endTime,
 			@Param("note") String note);
 
 	/**

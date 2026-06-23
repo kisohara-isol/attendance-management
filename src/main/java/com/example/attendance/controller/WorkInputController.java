@@ -1,6 +1,6 @@
 package com.example.attendance.controller;
 
-import java.util.Collections;
+import java.time.LocalDate;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.CreateWorkRequest;
 import com.example.attendance.util.ControllerUtil;
+import com.example.attendance.util.DateTimeUtil;
 import com.example.attendance.util.LogUtil;
 
 /**
@@ -33,12 +34,15 @@ public class WorkInputController {
 	 * @return /attendance/management/workinputの描写
 	 */
 	@GetMapping(value = "/attendance/management/workinput")
-	public String display(@ModelAttribute CreateWorkRequest request, Model model, HttpSession session,
+	public String display(
+			@ModelAttribute("workDay") LocalDate workDay,
+			@ModelAttribute("startTime") String startTime,
+			@ModelAttribute("endTime") String endTime, //受け取り自体はLocalTimeでも可能
+			@ModelAttribute("note") String note,
+			@ModelAttribute CreateWorkRequest request, Model model, HttpSession session,
 			RedirectAttributes redirect) {
 		//sessionの確認
-		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
-				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認
-		if (!isKeepingSession) {
+		if (!ControllerUtil.isKeepingSession(session, "loginShain")) {
 			LogUtil.warn("W99999");
 
 			redirect.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
@@ -46,12 +50,23 @@ public class WorkInputController {
 			return "redirect:/attendance/management/login"; // 最初のページへ
 		}
 
+		LogUtil.info("workDay= {},startTime={},endTime={},note={}", workDay, startTime, endTime, note);
+		//ログイン社員をmodelに詰める
+		model.addAttribute("loginShain", session.getAttribute("loginShain"));
+
+		if (request.getStartTime() == null) {
+			//CreateWorkRequestのstartTime(必須項目)が空なら、持ってきた各要素を詰め込む
+			request.setWorkDay(workDay);
+			//時間要素は、コロン区切りの場合それを取り外す
+			request.setStartTime(DateTimeUtil.nonColonStyle(startTime).orElse(startTime));
+			request.setEndTime(DateTimeUtil.nonColonStyle(endTime).orElse(endTime));
+			request.setNote(note);
+		}
+
 		//ログ出力
 		LogUtil.info("[{}]:Display \"/attendance/management/workinput\", session=[{}]",
 				WorkInputController.class.getSimpleName(), session.getAttribute("loginShain"));
 
-		//ログイン社員をmodelに詰める
-		model.addAttribute("loginShain", session.getAttribute("loginShain"));
 		return "attendance/management/workinput";
 	}
 

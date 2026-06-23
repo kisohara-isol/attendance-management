@@ -1,5 +1,9 @@
 package com.example.attendance.dto;
 
+import static java.util.Map.*;
+
+import java.util.Map;
+
 import jakarta.validation.constraints.NotBlank;
 
 import lombok.Data;
@@ -23,7 +27,7 @@ public class WorkTableRequest {
 	 */
 	@NotBlank(message = "年を入力してください。")
 	private String workYear;
-	
+
 	/** * 照会対象の月（必須入力）
 	 * <p>
 	 * 画面で未入力のまま送信された場合、「月を入力してください。」というエラーメッセージが生成されます。
@@ -31,4 +35,25 @@ public class WorkTableRequest {
 	 */
 	@NotBlank(message = "月を入力してください。")
 	private String workMonth;
+
+	/**
+	 * このdtoの各フィールドがもつアノテーションとエラーコードの二次元マップ<br>
+	 * <p>親mapKey=フィールド名<br>
+	 * 子mapKey=フィールドに付与されたアノテーション名<br>
+	 * 子mapValue=対応するエラーコード
+	 */
+	private static final Map<String, Map<String, String>> ANNOTATION_CODE = Map.ofEntries(
+			entry("workYear", Map.ofEntries(entry("NotBlank", "W20001"))),
+			entry("workMonth", Map.ofEntries(entry("NotBlank", "W20002"))));
+
+	/**
+	 * このdtoの各フィールドが持つアノテーションとエラーコードの二次元マップを返す
+	 * @return Map
+	 * <p>親mapKey=フィールド名<br>
+	 * 子mapKey=フィールドに付与されたアノテーション名<br>
+	 * 子mapValue=対応するエラーコード
+	 */
+	public static Map<String, Map<String, String>> getAnnotationCodeMap() {
+		return ANNOTATION_CODE;
+	}
 }

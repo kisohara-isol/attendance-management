@@ -70,10 +70,10 @@ public class WorkConfirmServiceImpl implements WorkConfirmService {
 		}
 
 		// 2. 退勤時間の変換と初期化 (00:00)
-		LocalTime endTime;
+		String endTime;
 		if (request.getEndTime() == null || "".equals(request.getEndTime())) {
 			// 未入力なら 00時00分 を代入
-			endTime = LocalTime.MIN;
+			endTime = LocalTime.MIN.format(TIME_FORMATTER);
 		} else {
 			// ⭕ 型エラーを修正：String型を正しく LocalTime にパースして代入します
 			endTime = request.getEndTime();

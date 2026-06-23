@@ -43,10 +43,10 @@ public class RetouchController {
 	private RetouchService retouchService;
 
 	@GetMapping(value = "/attendance/management/retouch")
-	public String display(@RequestParam(value = "workDay") String workDay,
-			@RequestParam(value = "startTime") String startTime, 
-			@RequestParam(value = "endTime") String endTime,
-			@RequestParam(value = "note") String note, 
+	public String display(@ModelAttribute(value = "workDay") String workDay,
+			@ModelAttribute(value = "startTime") String startTime, 
+			@ModelAttribute(value = "endTime") String endTime,
+			@ModelAttribute(value = "note") String note, 
 			@ModelAttribute RetouchRequest retouchRequest, Model model,
 			HttpSession session) {
 		

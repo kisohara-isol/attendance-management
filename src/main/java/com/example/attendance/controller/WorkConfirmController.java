@@ -1,7 +1,6 @@
 package com.example.attendance.controller;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 import jakarta.servlet.http.HttpSession;
@@ -18,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.attendance.dto.CreateWorkRequest;
 import com.example.attendance.entity.ShainData;
 import com.example.attendance.service.WorkConfirmService;
+import com.example.attendance.util.DateTimeUtil;
 import com.example.attendance.util.LogUtil;
 
 /**
@@ -88,7 +88,8 @@ public class WorkConfirmController {
 		model.addAttribute("startTime", startTime);
 
 		// 3. 退勤時間の真ん中にコロンを挟んでModelに格納（例: "1800" -> "18:00" / 未入力なら "00:00"）
-		LocalTime endTime = createWorkRequest.getEndTime();
+
+		String endTime = DateTimeUtil.withColonStyle(createWorkRequest.getEndTime()).get();
 
 		model.addAttribute("endTime", endTime);
 
@@ -113,19 +114,20 @@ public class WorkConfirmController {
 	 * @return 勤務表画面へのリダイレクト指示 ({@code "redirect:/attendance/management/worktable"})
 	 */
 	@PostMapping("/attendance/management/workconfirm")
-	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session,RedirectAttributes redirectAttributes) {
+	public String input(@ModelAttribute CreateWorkRequest createWorkRequest, Model model, HttpSession session,
+			RedirectAttributes redirectAttributes) {
 
 		// セッションから社員IDを取得
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
-		
+
 		// 各コントローラーのセッション切れの処理部分
-				if (session == null || shain == null) {
-					LogUtil.warn("W99999");
+		if (session == null || shain == null) {
+			LogUtil.warn("W99999");
 
-					redirectAttributes.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
+			redirectAttributes.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
 
-					return "redirect:/attendance/management/login"; // 最初のページへ
-				}
+			return "redirect:/attendance/management/login"; // 最初のページへ
+		}
 
 		// サービス層を呼び出してDBへの登録を実行
 		try {

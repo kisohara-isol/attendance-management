@@ -1,7 +1,5 @@
 package com.example.attendance.dto.validator;
 
-import java.time.LocalTime;
-
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -34,7 +32,7 @@ public class HolidayCheckValidator implements ConstraintValidator<HolidayCheck, 
 	public boolean isValid(CreateWorkRequest value, ConstraintValidatorContext context) {
 		//バリデーションの対象となるフィールドの値
 		String start = value.getStartTime();
-		LocalTime end = value.getEndTime();
+		String end = value.getEndTime();
 
 		boolean isStartYasumi = "休み".equals(start);
 		boolean isEndNull = end == null;
