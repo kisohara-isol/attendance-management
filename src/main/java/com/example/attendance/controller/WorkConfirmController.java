@@ -1,7 +1,6 @@
 package com.example.attendance.controller;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -38,11 +37,6 @@ public class WorkConfirmController {
 	private WorkConfirmService workConfirmService;
 
 	/**
-	 * 日付をスラッシュ区切りの文字列（例: "2026/06/02"）に変換するためのフォーマッター
-	 */
-	private static final DateTimeFormatter SLASH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-
-	/**
 	 * 勤務登録の確認画面を表示（ディスプレィ）します。
 	 * <p>
 	 * ユーザーが見やすいよう、日付データにはスラッシュ（{@code /}）を、
@@ -75,23 +69,20 @@ public class WorkConfirmController {
 		// 1. 日付をスラッシュ区切り（yyyy/MM/dd）に変換してModelに格納
 		LocalDate rawWorkDay = createWorkRequest.getWorkDay();
 		if (rawWorkDay != null) {
-			model.addAttribute("workDay", rawWorkDay.format(SLASH_FORMATTER));
+			model.addAttribute("workDay", rawWorkDay.format(DateTimeUtil.SLASH_DATE_FORMAT));
 		} else {
 			model.addAttribute("workDay", "");
 		}
 
 		// 2. 出勤時間の真ん中にコロンを挟んでModelに格納（例: "0900" -> "09:00"）
 		String startTime = createWorkRequest.getStartTime();
-		if (startTime != null && startTime.length() == 4) {
-			startTime = startTime.substring(0, 2) + ":" + startTime.substring(2, 4);
-		}
-		model.addAttribute("startTime", startTime);
+		model.addAttribute("startTime", DateTimeUtil.withColonStyle(startTime).orElse(startTime));
 
 		// 3. 退勤時間の真ん中にコロンを挟んでModelに格納（例: "1800" -> "18:00" / 未入力なら "00:00"）
 
-		String endTime = DateTimeUtil.withColonStyle(createWorkRequest.getEndTime()).get();
+		String endTime = createWorkRequest.getEndTime();
 
-		model.addAttribute("endTime", endTime);
+		model.addAttribute("endTime", DateTimeUtil.withColonStyle(endTime).orElse(endTime));
 
 		// 4. 備考はそのままModelに格納
 		model.addAttribute("note", createWorkRequest.getNote());

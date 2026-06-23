@@ -1,7 +1,5 @@
 package com.example.attendance.entity;
 
-import java.time.format.DateTimeFormatter;
-
 import lombok.Data;
 
 /**
@@ -19,9 +17,6 @@ import lombok.Data;
  */
 @Data
 public class AttendanceData {
-	/** 出勤日のフォーマット*/
-	public static final DateTimeFormatter WORK_DAY_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-
 	/** 定時の勤務時間(分)*/
 	public static final int REGULAR_WORK_TIME = 480;
 	
