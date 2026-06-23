@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.CreateWorkRequest;
+import com.example.attendance.dto.validator.ValidGroupOrder;
 import com.example.attendance.util.ControllerUtil;
 import com.example.attendance.util.DateTimeUtil;
 import com.example.attendance.util.LogUtil;
@@ -21,6 +22,7 @@ import com.example.attendance.util.LogUtil;
 /**
  * /attemdance/management/workinputのコントローラクラス
  * @author kato
+ * @version 2.0 2026-06-23 kato
  */
 @Controller
 public class WorkInputController {
@@ -66,7 +68,6 @@ public class WorkInputController {
 		//ログ出力
 		LogUtil.info("[{}]:Display \"/attendance/management/workinput\", session=[{}]",
 				WorkInputController.class.getSimpleName(), session.getAttribute("loginShain"));
-
 		return "attendance/management/workinput";
 	}
 
@@ -79,11 +80,11 @@ public class WorkInputController {
 	 * @return /attendance/management/workconfirmへのリダイレクト
 	 */
 	@PostMapping("/attendance/management/workinput")
-	public String redilect(@ModelAttribute @Validated CreateWorkRequest request, BindingResult result, Model model,
-			RedirectAttributes redirect) {
+	public String redilect(@ModelAttribute @Validated(ValidGroupOrder.class) CreateWorkRequest request,
+			BindingResult result, Model model, RedirectAttributes redirect) {
 		//バリデーションチェック
 		if (result.hasErrors()) {
-			ControllerUtil.warnAllBindErrors(result, CreateWorkRequest::getErrorCode);
+			ControllerUtil.warnAllBindErrors(result, CreateWorkRequest.getAnnotationCodeMap());
 			return "attendance/management/workinput"; //相対パスにしないとエラーとなると報告有り
 		}
 

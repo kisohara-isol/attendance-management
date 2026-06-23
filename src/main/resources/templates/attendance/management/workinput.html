@@ -3,7 +3,7 @@
 
 <head>
 	<meta charset="UTF-8" name="author" content="kato">
-	<title>勤務追加画面</title>
+	<title>勤務変更画面</title>
 	<script> //利用するとyyyyMMdd形式で日付を取得するプログラム。たぶんjavaScript。
 		function getToday() {
 			const today = new Date();
@@ -54,12 +54,7 @@
 		<form th:action="@{/attendance/management/workinput}" th:object="${createWorkRequest}" method="post">
 			<div class="form-row">
 				<label>日付：</label>
-				<input type="text" th:field="*{workDay}" />
-				<span>(YYYYMMDD で入力)</span>
-				<button type="button" onclick="getToday()">今日の日付を入力</button>
-				<div class="error-message">
-					<th:block th:if="${#fields.hasErrors('workDay')}" th:errors="*{workDay}"></th:block>
-				</div>
+				<input type="text" th:field="*{workDay}" readonly style="border: none;"/>
 			</div>
 
 			<div class="form-row">
@@ -83,6 +78,7 @@
 			<div class="form-row">
 				<label>備考：</label>
 				<input type="text" th:field="*{note}">
+				<span>(有給の場合は「有給」の二文字を入力)</span>
 				<div class="error-message">
 					<th:block th:if="${#fields.hasErrors('note')}" th:errors="*{note}"></th:block>
 				</div>
@@ -90,6 +86,7 @@
 
 			<div >
 				<button type="submit">確認</button>
+				<button type="button" onclick="history.back()">勤務表に戻る</button>
 			</div>
 		</form>
 	</div>

@@ -1,43 +1,45 @@
 package com.example.attendance.dto;
 
+import static java.util.Map.*;
+
 import java.time.LocalDate;
+import java.util.Map;
 
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
-import com.example.attendance.dto.validator.HolidayCheck;
-import com.example.attendance.util.CreateWorkRequestFields;
+import com.example.attendance.dto.validator.CreateWorkRequestCheck;
+import com.example.attendance.dto.validator.ValidFirst;
+import com.example.attendance.dto.validator.ValidSecond;
+import com.example.attendance.dto.validator.ValidThird;
 
 import lombok.Data;
 
 /**
  * 勤務追加(workinput)画面の入力値。
  * @author kato
+ * @version 2.0 2026-06-23 kato
  */
 @Data
-@HolidayCheck
+@CreateWorkRequestCheck(groups = ValidThird.class) //高度なバリデーションを実行する。
 public class CreateWorkRequest {
 
-	/**出勤日。yyyyMMdd*/
-	@DateTimeFormat(pattern = "yyyyMMdd")
-	//NotEmptyはLocalDateに使えない。厳密にはNotNullだと判定対象が違うらしいが空文字のチェックはできている
-	@NotNull(message = "{W30001}") //messages.propertiesにあるW30001の値を取得
+	/**出勤日。yyyy/MM/dd*/
+	//springbootのお節介で、余所での表記を流用してスラッシュ区切りにしてくれる…らしい
 	private LocalDate workDay;
-	
+
 	/**「出勤時間(HHMM)」もしくは文字列「休み」*/
-	@NotEmpty(message = "{W30002}")
-	@Pattern(regexp="^(([0,1][0-9]|2[0-3])[0-5][0-9]|休み)?$", message = "{W30004}") //許容する値は「[0-24][0-59]」or「休み」or「空白」。三つめはNotEmptyのほうに引っかかる
+	@NotEmpty(message = "{W30002}", groups = ValidFirst.class)
+	@Pattern(regexp = "^([0,1][0-9]|2[0-3])[0-5][0-9]|休み$", message = "{W30004}", groups = ValidSecond.class) //許容する値は「[0-23][0-59]」or「休み」。先にNotEmptyが実行される。
 	private String startTime;
-	
+
 	/**
 	 * 「退勤時間(HHMM)」もしくはnull<br>
 	 * 24時間以上の値を許容する
 	 */
+	@Pattern(regexp = "^(([0-3][0-9]|4[0-7])[0-5][0-9])?$", message = "{W30006}", groups = ValidFirst.class) //許容する値は「[0-47][0-59]」or「空白」。
 	private String endTime;
-	
+
 	/**備考*/
 	private String note;
 
@@ -47,23 +49,34 @@ public class CreateWorkRequest {
 	public CreateWorkRequest() {
 		// TODO 自動生成されたコンストラクター・スタブ
 	}
-	
+
+
 	/**
-	 * 渡されたフィールド名とアノテーション名に対応するエラーコードを取得する
-	 * @param field フィールド名
-	 * @param annotationType アノテーション名
-	 * @return エラーコード
+	 * このdtoの各フィールドがもつアノテーションとエラーコードの二次元マップ<br>
+	 * <p>親mapKey=フィールド名<br>
+	 * 子mapKey=フィールドに付与されたアノテーション名<br>
+	 * 子mapValue=対応するエラーコード
 	 */
-	public static String getErrorCode(String field, String annotationType) {
-		//フィールド名に対応する列挙子を取得
-		CreateWorkRequestFields fieldEnum = switch (field) {
-		case "workDay" -> CreateWorkRequestFields.WORK_DAY;
-		case "startTime" -> CreateWorkRequestFields.START_TIME;
-		case "endTime" -> CreateWorkRequestFields.END_TIME;
-		case "note" -> CreateWorkRequestFields.NOTE;
-		default -> throw new IllegalArgumentException("Unexpected value: " + field);
-		};
-		return fieldEnum.getErrorCode(annotationType);
+	private static final Map<String, Map<String, String>> ANNOTATION_CODE = Map.ofEntries(
+			entry("startTime", Map.ofEntries(
+					entry("NotEmpty", "W30002"),
+					entry("Pattern", "W30004"),
+					entry("CreateWorkRequestCheck", "W30008"))),
+			entry("endTime", Map.ofEntries(
+					entry("typeMismatch", "W30006"),
+					entry("CreateWorkRequestCheck", "W30005"))),
+			entry("note", Map.ofEntries(
+					entry("CreateWorkRequestCheck", "W30007"))));
+
+	/**
+	 * このdtoの各フィールドが持つアノテーションとエラーコードの二次元マップを返す
+	 * @return Map
+	 * <p>親mapKey=フィールド名<br>
+	 * 子mapKey=フィールドに付与されたアノテーション名<br>
+	 * 子mapValue=対応するエラーコード
+	 */
+	public static Map<String, Map<String, String>> getAnnotationCodeMap() {
+		return ANNOTATION_CODE;
 	}
 
 }

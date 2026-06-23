@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpSession;
@@ -25,23 +24,6 @@ public class ControllerUtil {
 	public static boolean isKeepingSession(HttpSession session, String name) {
 		return Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
 				.stream().anyMatch(x -> name.equals(x));
-	}
-
-	/**
-	 * 引数に渡したBindingResultが持つ全てのバインドエラーをログ出力する
-	 * @param result バインドエラーを持つBindingResult
-	 * @param getErrorCode エラーコードを取得するための関数<br>
-	 * 						第一引数はエラーを発したフィールド名、第二引数はアノテーション名
-	 */
-	public static void warnAllBindErrors(BindingResult result, BinaryOperator<String> getErrorCode) {
-		result.getFieldErrors().forEach(
-				x -> {
-					String field = x.getField();
-					String annotationType = x.getCode();
-					LogUtil.warn(
-							//渡されたエラーコード取得関数を適用
-							getErrorCode.apply(field, annotationType));
-				});
 	}
 
 	/**
