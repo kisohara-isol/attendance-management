@@ -40,6 +40,7 @@ public class RestoreController {
 	@GetMapping("/attendance/management/restore")
 	public String display(@ModelAttribute RestoreRequest restoreRequest, HttpSession session,
 			RedirectAttributes redirect) {
+		LogUtil.info("社員復旧のページに飛びました。");
 		//sessionの確認
 		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
 				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="author" content="Hagiwara">
+	<title>勤務表提出画面</title>
+</head>
+
+<body>
+	<div>勤務表提出</div>
+
+	<div>出勤対象日数：<span>[[${allWorkDays}]]日</span></div>
+	<div>勤務日数：<span>[[${actualWorkDays}]]日</span></div>
+	<div>有給：<span>[[${paidHoliday}]]日</span></div>
+	<div>総支給額：<span>[[${allSalary}]]円</span></div>
+	<form th:action="@{/attendance/management/worksubmission}" method="post">
+		<input type="hidden" name="yearMonth" th:value="${yearMonth}">
+		<input type="hidden" name="actualWorkDays" th:value="${actualWorkDays}">
+		<input type="hidden" name="allSalary" th:value="${allSalary}">
+		<div>
+			<button type="submit">確定</button>
+			<input type="button" onclick="history.back()" value="戻る" class="up">
+		</div>
+	</form>
+</body>
+
+</html>
