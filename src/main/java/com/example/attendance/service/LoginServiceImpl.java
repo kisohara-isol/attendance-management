@@ -1,8 +1,5 @@
 package com.example.attendance.service;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -17,8 +14,6 @@ public class LoginServiceImpl implements LoginService {
 
 	@Autowired
 	private ShainDataMapper shainDataMapper;
-
-	private final Map<String, Integer> errorMap = new HashMap<>();
 
 	@Override
 	@Transactional
@@ -36,7 +31,6 @@ public class LoginServiceImpl implements LoginService {
 			return 4; // アカウントが存在しない
 		}
 
-		// 💡【最重要：ガードロジック】
 		// すでにフラグが立っている（stopFlg == 1）ときは、これ以上 failureCount を増やさないよう即座に終了する
 		if (shain.getStopFlg() == 1) {
 			return 2; // すでにロック中（failure_count は 3 のまま固定されます）
@@ -49,8 +43,8 @@ public class LoginServiceImpl implements LoginService {
 			shain.setStopFlg(0);
 			shainDataMapper.updateFailureCount(shain);
 			shainDataMapper.updateShainData(shain); // 必要に応じてstopFlgも安全のためリセット
-			errorMap.clear();
 			return 1;
+
 		} else {
 			// パスワード間違い（失敗カウントを1増やす）
 			int errorCounts = shain.getFailureCount() + 1;
