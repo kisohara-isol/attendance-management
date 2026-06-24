@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.attendance.dto.WorkTableRequest;
@@ -157,7 +160,7 @@ public class WorkTableController {
 	public String input(Model model, @ModelAttribute("WorkTableRequest") WorkTableRequest request,
 			HttpSession session, RedirectAttributes redirectAttributes) {
 
-		jakarta.servlet.http.HttpServletRequest req = ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
+		HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder
 				.getRequestAttributes()).getRequest();
 		String selectedDay = req.getParameter("selectedDay");
 
@@ -180,13 +183,20 @@ public class WorkTableController {
 		String year = request.getWorkYear();
 		String month = request.getWorkMonth();
 
-		int totalDaysInMonth = java.time.YearMonth.of(Integer.parseInt(year), Integer.parseInt(month)).lengthOfMonth();
+		int totalDaysInMonth = YearMonth.of(Integer.parseInt(year), Integer.parseInt(month)).lengthOfMonth();
 
 		int registeredDays = workTableMapper.countRegisteredDays(shain.getShainId(), year,
 				String.format("%02d", Integer.parseInt(month)));
 
+		if (Integer.parseInt(year) < 2020 || 9999 < Integer.parseInt(year)) {
+			redirectAttributes.addFlashAttribute("errorMessage", "2020年～9999年以外の期間は申請できません。");
+			LogUtil.warn("W20001"); // W20001の警告ログを出力
+			return "redirect:/attendance/management/worktable";
+		}
 		if (registeredDays < totalDaysInMonth) {
 			redirectAttributes.addFlashAttribute("errorMessage", "すべての日の勤務入力が完了していません。");
+			redirectAttributes.addAttribute("Year", request.getWorkYear());
+			redirectAttributes.addAttribute("Month", request.getWorkMonth());
 			return "redirect:/attendance/management/worktable";
 		}
 

@@ -57,22 +57,22 @@ public class LoginController {
 		case 2:
 			LogUtil.warn("W10005");
 			model.addAttribute("errorMessage", "このアカウントは停止されています。管理者に問い合わせてください。");
-			return "/attendance/management/login";
+			return "attendance/management/login";
 
 		case 3:
 			LogUtil.warn("W10004");
 			model.addAttribute("errorMessage", "ログイン失敗が3回に達したため、アカウントを停止しました。");
-			return "/attendance/management/login";
+			return "attendance/management/login";
 
 		case 4:
 			LogUtil.warn("W10006");
 			model.addAttribute("errorMessage", "この社員IDは存在しません");
-			return "/attendance/management/login";
+			return "attendance/management/login";
 
 		case 5:
 			LogUtil.error("E10001");
 			model.addAttribute("errorMessage", "DB接続時にエラーが発生しました。時間を空けて再度実行してください。");
-			return "/attendance/management/login";
+			return "attendance/management/login";
 
 		case 0:
 		default:

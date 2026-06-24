@@ -30,7 +30,7 @@
 	<div>
 		<form th:action="@{/attendance/management/restore}" th:object="${restoreRequest}" method="POST">
 			<label>社員ID:</label>
-			<input th:type="number" th:field="*{shainId}" />
+			<input th:type="number" th:field="*{shainId}" min="1" />
 			<div th:if="${errorMessage} OR ${#fields.hasErrors('shainId')}" th:class="error-message">
 				<th:block th:if="${#fields.hasErrors('shainId')}" th:errors="*{shainId}"></th:block>
 				<th:block th:if="${errorMessage}" th:text="${errorMessage}"></th:block>
