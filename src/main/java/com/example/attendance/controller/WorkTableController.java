@@ -110,6 +110,10 @@ public class WorkTableController {
 		String workYear = request.getWorkYear();
 		String workMonth = request.getWorkMonth();
 
+		// 初期値
+		int year = LocalDate.now().getYear();
+		int month = LocalDate.now().getMonthValue();		
+		
 		// 年月が空欄だった場合メッセージを表示する
 		if (bindingResult.hasErrors()) {
 			// 入力値が不正だった理由を取得
@@ -124,41 +128,50 @@ public class WorkTableController {
 			if (errorMessage.contains("月を入力してください。")) {
 				LogUtil.warn("W20002");
 			}
+			model.addAttribute("year", year);
+			model.addAttribute("month", month);
 			return "attendance/management/worktable";
 		}
 
 		// 年の値が不正か調べる
 		try {
-			int year = Integer.parseInt(workYear);
+			year = Integer.parseInt(workYear);
 		} catch (NumberFormatException e) {
 			bindingResult.rejectValue("workYear", "error.workYear", "YYYY形式で入力してください。");
 			LogUtil.warn("W20003");
+			model.addAttribute("year", year);
+			model.addAttribute("month", month);
 			return "attendance/management/worktable";
 		}
 		// 年の値が2020年～9999年かを調べる
-		int year = Integer.parseInt(workYear);
+		year = Integer.parseInt(workYear);
 		if (year < 2020 || year > 9999) {
 			bindingResult.rejectValue("workYear", "error.workYear", "2020年～9999年の間で入力してください。");
 			LogUtil.warn("2020年～9999年の間で入力してください。");
+			model.addAttribute("year", year);
+			model.addAttribute("month", month);
 			return "attendance/management/worktable";
 		}
 		// 月の値が不正か調べる(数字以外ならエラー)
 		try {
-			int month = Integer.parseInt(workMonth);
+			month = Integer.parseInt(workMonth);
 		} catch (NumberFormatException e) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
 			LogUtil.warn("W20004");
+			model.addAttribute("year", year);
+			model.addAttribute("month", month);
 			return "attendance/management/worktable";
 		}
 		// 月の値が不正か調べる(1～12の数字)
 		if (Integer.parseInt(workMonth) < 1 || 12 < Integer.parseInt(workMonth)) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
 			LogUtil.warn("W20004");
+			model.addAttribute("year", year);
+			model.addAttribute("month", month);
 			return "attendance/management/worktable";
 		}
-
 		
-		int month = Integer.parseInt(workMonth);
+		month = Integer.parseInt(workMonth);
 
 //		// DBから勤務表を取得・反映
 		List<AttendanceData> workList = workTableService.getCalendar(shain.getShainId(), year, month);
@@ -213,7 +226,21 @@ public class WorkTableController {
 
 		// DBから勤務表を取得
 		List<AttendanceData> submittedList = workTableService.getCalendar(shain.getShainId(), year, month);
-
+		
+		// dtoを用意しておく
+		WorkTableRequest tableRequest = new WorkTableRequest();
+		tableRequest.setWorkYear(String.valueOf(year));
+		tableRequest.setWorkMonth(String.valueOf(month));
+		
+		// 2020年～9999年の間でない時、戻す
+		if (year < 2020 || year > 9999) {	
+			model.addAttribute("message", "2020年～9999年の間の入力をお願いします。");
+			// 入力欄に今の年月ではなく、勤務表を提出した年月をセットしておく
+			model.addAttribute("WorkTableRequest", tableRequest);
+			model.addAttribute("year", year);
+			model.addAttribute("month", month);
+			return "attendance/management/worktable";
+		}
 		// 休みでないかつ勤務を提出していない日があったら提出できない
 		for (AttendanceData ad : submittedList) {
 			if(!ad.isBreakDay()) {
@@ -221,15 +248,10 @@ public class WorkTableController {
 					LogUtil.warn("全ての勤怠を提出していません。");
 					model.addAttribute("workList", submittedList);
 					model.addAttribute("message", "全ての勤怠を提出していません。");
-					
 					// 入力欄に今の年月ではなく、勤務表を提出した年月をセットしておく
-					WorkTableRequest tableRequest = new WorkTableRequest();
-					
-					tableRequest.setWorkYear(String.valueOf(year));
-					tableRequest.setWorkMonth(String.valueOf(month));
-					
 					model.addAttribute("WorkTableRequest", tableRequest);
-					
+					model.addAttribute("year", year);
+					model.addAttribute("month", month);
 					return "attendance/management/worktable";
 				}
 			}
