@@ -13,7 +13,7 @@
 	<div>出勤対象日数：<span>[[${allWorkDays}]]日</span></div>
 	<div>勤務日数：<span>[[${actualWorkDays}]]日</span></div>
 	<div>有給：<span>[[${paidHoliday}]]日</span></div>
-	<div>総支給額：<span>[[${allSalary}]]円</span></div>
+	<div>総支給額：<span>[[${#numbers.formatInteger(allSalary, 1, 'COMMA')}]]円</span></div>
 	<form th:action="@{/attendance/management/worksubmission}" method="post">
 		<input type="hidden" name="yearMonth" th:value="${yearMonth}">
 		<input type="hidden" name="actualWorkDays" th:value="${actualWorkDays}">

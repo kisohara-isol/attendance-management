@@ -135,6 +135,13 @@ public class WorkTableController {
 			LogUtil.warn("W20003");
 			return "attendance/management/worktable";
 		}
+		// 年の値が2020年～9999年かを調べる
+		int year = Integer.parseInt(workYear);
+		if (year < 2020 && year > 9999) {
+			bindingResult.rejectValue("workYear", "error.workYear", "2020年～9999年の間で入力してください。");
+			LogUtil.warn("2020年～9999年の間で入力してください。");
+			return "attendance/management/worktable";
+		}
 		// 月の値が不正か調べる(数字以外ならエラー)
 		try {
 			int month = Integer.parseInt(workMonth);
@@ -150,7 +157,7 @@ public class WorkTableController {
 			return "attendance/management/worktable";
 		}
 
-		int year = Integer.parseInt(workYear);
+		
 		int month = Integer.parseInt(workMonth);
 
 //		// DBから勤務表を取得・反映
