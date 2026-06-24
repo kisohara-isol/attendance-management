@@ -28,7 +28,8 @@ import com.example.attendance.util.MessagesPropertiesUtil;
  * <p>
  * ログインセッションのチェック、入力値のバリデーション、 およびサービス層を介した勤務表データの取得と画面へのマッピングを行います。
  * </p>
- * * @author Hagiawra
+ *  @author Hagiawra
+ *  @version 2.1 2026-06-24 kato
  */
 @Controller
 public class WorkTableController {
@@ -47,11 +48,12 @@ public class WorkTableController {
 	 * @param request 検索条件を保持するリクエストDTO
 	 * @param model   画面へデータを渡すためのModelオブジェクト
 	 * @param session ログイン状態を検証するためのHTTPセッション
+	 * @param redirect リダイレクト
 	 * @return 遷移先のテンプレート名、またはログイン画面へのリダイレクトパス
-	 * @version 2.0 2026-06-22 kato
 	 */
 	@GetMapping(value = "/attendance/management/worktable")
-	public String display(@ModelAttribute WorkTableRequest request, Model model, HttpSession session) {
+	public String display(@ModelAttribute WorkTableRequest request, Model model, HttpSession session,
+			RedirectAttributes redirect) {
 
 		LogUtil.info("勤務表照会ページに飛びました。");
 
@@ -70,6 +72,7 @@ public class WorkTableController {
 		//		セッション切れの場合
 		if (session == null || shain == null) {
 			LogUtil.warn("W99999");
+			redirect.addFlashAttribute("errorMessage", MessagesPropertiesUtil.getErrorMessage("W99999"));
 			return "redirect:/attendance/management/login";
 		}
 
@@ -117,6 +120,7 @@ public class WorkTableController {
 		//		セッション切れの場合
 		if (session == null || shain == null) {
 			LogUtil.warn("W99999");
+			redirectAttributes.addFlashAttribute("errorMessage", MessagesPropertiesUtil.getErrorMessage("W99999"));
 			return "redirect:/attendance/management/login";
 		}
 		model.addAttribute("shain", shain);
@@ -133,9 +137,10 @@ public class WorkTableController {
 		// 年の値が不正か調べる
 		try {
 			int year = Integer.parseInt(workYear);
-			if(year < 2020) {
+			if (year < 2020) {
 				//2020年以前の値ははじく
-				bindingResult.rejectValue("workYear", "error.workYear", MessagesPropertiesUtil.getErrorMessage("W20005"));
+				bindingResult.rejectValue("workYear", "error.workYear",
+						MessagesPropertiesUtil.getErrorMessage("W20005"));
 				LogUtil.warn("W20005");
 				return "attendance/management/worktable";
 			}
@@ -190,6 +195,7 @@ public class WorkTableController {
 
 		if (!ControllerUtil.isKeepingSession(session, "loginShain")) {
 			LogUtil.warn("W99999");
+			redirectAttributes.addFlashAttribute("errorMessage", MessagesPropertiesUtil.getErrorMessage("W99999"));
 			return "redirect:/attendance/management/login";
 		}
 
@@ -201,6 +207,62 @@ public class WorkTableController {
 
 		LogUtil.info("勤務変更POST:{}", redirectAttributes.getFlashAttributes());
 		return "redirect:/attendance/management/workinput";
+	}
+
+	/**
+	 * 「勤務表提出」ボタンの押下時に、当該年月の勤務情報をDBから取得し、
+	 * 全日数分勤務情報が埋まっている場合にworksubmissionへページ遷移する。
+	 * @param year 年
+	 * @param month 月
+	 * @param request ページ遷移に失敗した際、現在のWorkTableRequestの内容を維持する
+	 * @param session
+	 * @param model
+	 * @param redirect
+	 * @return 全日数分の勤務情報が入力されている場合は、worksubmissionへのリダイレクト
+	 */
+	@PostMapping("/attendance/management/worksubmission")
+	public String checkSubmittableAndRedirect(
+			@ModelAttribute("workYear") int year,
+			@ModelAttribute("workMonth") int month,
+			@ModelAttribute("WorkTableRequest") WorkTableRequest request,
+			HttpSession session, Model model, RedirectAttributes redirect) {
+		//セッションチェック
+		if (!ControllerUtil.isKeepingSession(session, "loginShain")) {
+			LogUtil.warn("W99999");
+			redirect.addFlashAttribute("errorMessage", MessagesPropertiesUtil.getErrorMessage("W99999"));
+			return "redirect:/attendance/management/login";
+		}
+
+
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
+		model.addAttribute("shain", shain);
+
+		//一度「対象年」項目に、本来バリデーションではじかれる無効な値を入れた後、
+		//このボタンを押下すると無効な値の年の勤務表が入手出来てしまうことへの対策。
+		//褒められた解決法じゃない気がするが、策が浮かばなかった。無念。
+		if (!(year >= 2020 && year <= 9999)) {
+			LogUtil.warn("W20005");
+			model.addAttribute("submissionerror", MessagesPropertiesUtil.getErrorMessage("W20005"));
+			return "/attendance/management/worktable";
+		}
+
+		var attendancesList = workTableService.getAttendanceList(shain.getShainId(), year, month);
+		//勤務データがそろっているか確認
+		long enterdAttendancesNum = attendancesList.stream()
+				.filter(x -> x.getStartTime() != null)
+				.count();
+		var daysNumOfThisMonth = LocalDate.of(year, month, 1).lengthOfMonth();
+		if (enterdAttendancesNum != daysNumOfThisMonth) {
+			//出勤時間に値のある勤務データの数が日数と一致しない場合エラー
+			LogUtil.warn("W20006");
+			model.addAttribute("submissionerror", MessagesPropertiesUtil.getErrorMessage("W20006"));
+			model.addAttribute("workList", attendancesList);
+			LogUtil.debug("社員ID:{}の{}年{}月の勤務表を取得しました。", shain.getShainId(), year, month);
+			return "attendance/management/worktable";
+		}
+		redirect.addFlashAttribute("attendanceList", attendancesList);
+		LogUtil.info("submissionへ遷移");
+		return "redirect:/attendance/management/worksubmission";
 	}
 
 }

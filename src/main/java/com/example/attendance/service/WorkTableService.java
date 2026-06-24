@@ -14,7 +14,7 @@ import com.example.attendance.entity.AttendanceData;
  * @author Hagiwara
  */
 public interface WorkTableService {
-	
+
 	/**
 	 * 指定された社員および年月に紐づく勤怠明細一覧を取得・加工します。
 	 * <p>
@@ -29,4 +29,6 @@ public interface WorkTableService {
 	 * @throws java.time.DateTimeException 年月の指定が不正な場合に発生する可能性があります
 	 */
 	List<AttendanceData> getAttendanceList(int shainId, int year, int month);
+
+	List<AttendanceData> createAttendanceDatasFromDB(int shainId, int year, int month);
 }

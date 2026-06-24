@@ -157,7 +157,7 @@
 				<th>退勤</th>
 				<th>残業時間</th>
 				<th>備考</th>
-				<th>勤務時間修正</th>
+				<th>勤務変更</th>
 			</tr>
 			<tr th:each="work : ${workList}"
 				th:classappend="${work.minutes < 480 &amp;&amp; work.minutes > 0} ? 'active' : ''">
@@ -188,10 +188,22 @@
 		</table>
 
 		<div class="left-align-container">
-			<button type="button" th:onclick="|location.href='@{/attendance/management/worksubmission}'|">勤務表提出</button>
+			<form th:action="@{/attendance/management/worksubmission}" method="POST">
+				<input type="hidden" name="workYear" th:value="${WorkTableRequest.workYear}">
+				<input type="hidden" name="workMonth" th:value="${WorkTableRequest.workMonth}">
+				<button type="submit">勤務表提出</button>
+			</form>
+			<!--			<button type="button"-->
+			<!--				th:onclick="location.href=[[@{/attendance/management/worksubmission(year=${WorkTableRequest.workYear},month=${WorkTableRequest.workMonth})}]]">勤務表提出</button>-->
 			<!--*/location.href=以降の動的変更部分は、どうやら文字列結合扱いしてあげないとうまく解釈されない模様/*-->
-			<a id="admin-panel" th:if="${shain.shainName == '木曽原'}" th:href="@{/attendance/management/restore}">社員復旧</a>
+			<a id="admin-panel" th:if="${shain.loginId == 'kisohara'}"
+				th:href="@{/attendance/management/restore}">社員復旧</a>
+
 		</div>
+		<div th:if="${submissionerror}">
+			<span class="error-message" th:text="${submissionerror}"></span>
+		</div>
+
 
 		<br>
 		<div><a th:href="@{/attendance/management/login}">ログアウト</a></div>
