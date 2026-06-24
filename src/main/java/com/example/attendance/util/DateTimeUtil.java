@@ -28,7 +28,7 @@ import com.example.attendance.util.nationalholiday.PublicHolidayRelatedDay;
  * @author kato
  */
 public class DateTimeUtil {
-	
+
 	/**スラッシュ区切りの日付フォーマット*/
 	public static final DateTimeFormatter SLASH_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
@@ -115,6 +115,10 @@ public class DateTimeUtil {
 	 * @return 正しい引数を渡していればhh:mmの文字列のOptional。それ以外は空のOptional。
 	 */
 	public static Optional<String> withColonStyle(String timeExpr) {
+		if (timeExpr == null) {
+			//パターンマッチ前にnullチェック
+			return Optional.empty();
+		}
 		final Pattern TIME_FORMAT = Pattern.compile("^(\\d{2})(\\d{2})$");
 		var matcher = TIME_FORMAT.matcher(timeExpr);
 		var result = matcher.find();
@@ -123,7 +127,6 @@ public class DateTimeUtil {
 		}
 		return Optional.of(matcher.group(1) + ":" + matcher.group(2));
 	}
-	
 
 	/**
 	 * 受け取った時間のコロン区切り文字列表現(hh:mm形式)を、コロン無しに変換する。
@@ -132,6 +135,10 @@ public class DateTimeUtil {
 	 * @return 正しい引数を渡していればhhmmの文字列のOptional。それ以外は空のOptional。
 	 */
 	public static Optional<String> nonColonStyle(String timeExpr) {
+		if (timeExpr == null) {
+			//パターンマッチ前にnullチェック
+			return Optional.empty();
+		}
 		final Pattern TIME_FORMAT = Pattern.compile("^(\\d{2}):(\\d{2})$");
 		var matcher = TIME_FORMAT.matcher(timeExpr);
 		var result = matcher.find();

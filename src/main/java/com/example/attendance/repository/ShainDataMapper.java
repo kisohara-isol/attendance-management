@@ -1,9 +1,5 @@
 package com.example.attendance.repository;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param; // ⭕ MyBatis用のアノテーションに変更しました
 import org.apache.ibatis.annotations.Select;
@@ -40,23 +36,6 @@ public interface ShainDataMapper {
 	 */
 	@Select("SELECT * FROM shain_data WHERE login_id = #{loginId}")
 	ShainData selectShainById(@Param("loginId") String loginId);
-
-	/**
-	 * 勤務確認画面で「追加」ボタンが押された際、勤怠データをテーブルに新規登録（インサート）します。
-	 *
-	 * @param shainId   社員ID
-	 * @param workDay   出勤日
-	 * @param startTime 出勤時間（未入力や休みの場合は 00:00）
-	 * @param endTime   退勤時間（未入力の場合は 00:00）
-	 * @param note      備考
-	 */
-	@Insert("INSERT INTO attendance_table (shain_id,work_day,start_time,end_time,note) VALUES (#{shainId},#{workDay},#{startTime},#{endTime},#{note})")
-	void insertAttendanceData(
-			@Param("shainId") int shainId,
-			@Param("workDay") LocalDate workDay,
-			@Param("startTime") LocalTime startTime,
-			@Param("endTime") String endTime,
-			@Param("note") String note);
 
 	/**
 	 * 引数で渡された社員オブジェクトの情報に基づき、データベースの社員データを更新（アップデート）します。

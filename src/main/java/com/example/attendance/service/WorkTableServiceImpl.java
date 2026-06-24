@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.attendance.entity.AttendanceData;
-import com.example.attendance.repository.WorkTableMapper;
+import com.example.attendance.repository.AttendanceTableMapper;
 import com.example.attendance.util.DateTimeUtil;
 import com.example.attendance.util.LogUtil;
 
@@ -37,7 +37,7 @@ public class WorkTableServiceImpl implements WorkTableService {
 
 	/** 勤怠テーブルにアクセスするためのマッパーインターフェース */
 	@Autowired
-	WorkTableMapper workTableMapper;
+	AttendanceTableMapper workTableMapper;
 
 	/**
 	 * 指定された社員および年月に紐づく勤怠明細一覧を取得・加工します。

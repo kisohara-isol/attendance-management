@@ -81,7 +81,6 @@ public class WorkConfirmController {
 		// 3. 退勤時間の真ん中にコロンを挟んでModelに格納（例: "1800" -> "18:00" / 未入力なら "00:00"）
 
 		String endTime = createWorkRequest.getEndTime();
-
 		model.addAttribute("endTime", DateTimeUtil.withColonStyle(endTime).orElse(endTime));
 
 		// 4. 備考はそのままModelに格納
@@ -93,7 +92,7 @@ public class WorkConfirmController {
 	}
 
 	/**
-	 * 確認画面で「追加」ボタンが押された際、データをデータベースに登録（インサート）します。
+	 * 確認画面で「確定」ボタンが押された際、データをデータベースに登録します。
 	 * <p>
 	 * 実際のデータ加工や保存処理は {@link WorkConfirmService#insertAttendanceData} に委譲します。
 	 * 登録完了後は、二重送信防止および画面更新のため、勤務表画面へリダイレクトします。
@@ -120,10 +119,18 @@ public class WorkConfirmController {
 			return "redirect:/attendance/management/login"; // 最初のページへ
 		}
 
+		var workDay = createWorkRequest.getWorkDay();
 		// サービス層を呼び出してDBへの登録を実行
 		try {
-
-			workConfirmService.insertAttendanceData(createWorkRequest, shain);
+			if (workConfirmService.isExistAttendanceData(workDay, shain.getShainId())) {
+				//勤務記録がすでにあればUpdate
+				workConfirmService.updateAttendanceData(createWorkRequest, shain.getShainId());
+				LogUtil.info("UPDATE done [shain:{}, workDay:{}]",shain.getShainId(),workDay);
+			} else {
+				//勤務記録がなければInsert
+				workConfirmService.insertAttendanceData(createWorkRequest, shain.getShainId());
+				LogUtil.info("INSERT done [shain:{}, workDay:{}]",shain.getShainId(),workDay);
+			}
 
 		} catch (DataAccessException e) {
 

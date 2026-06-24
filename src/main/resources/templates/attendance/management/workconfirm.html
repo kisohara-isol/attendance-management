@@ -118,10 +118,10 @@
 				<input type="hidden" name="endTime" th:value="${createWorkRequest.endTime}" />
 				<input type="hidden" name="note" th:value="${createWorkRequest.note}" />
 
-				<button type="submit">追加（登録確定）</button>
+				<button type="submit">登録確定</button>
 			</form>
 
-			<a th:href="@{/attendance/management/workinput}" class="back-link">値を修正する</a>
+			<button type="button" onclick="history.back()">値を修正する</button>
 		</div>
 
 	</div>
