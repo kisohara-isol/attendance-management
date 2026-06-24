@@ -137,7 +137,7 @@ public class WorkTableController {
 		}
 		// 年の値が2020年～9999年かを調べる
 		int year = Integer.parseInt(workYear);
-		if (year < 2020 && year > 9999) {
+		if (year < 2020 || year > 9999) {
 			bindingResult.rejectValue("workYear", "error.workYear", "2020年～9999年の間で入力してください。");
 			LogUtil.warn("2020年～9999年の間で入力してください。");
 			return "attendance/management/worktable";
