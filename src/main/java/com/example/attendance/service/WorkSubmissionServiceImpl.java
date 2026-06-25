@@ -78,7 +78,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 	@Override
 	public int getPaidHoliday(List<AttendanceData> workList) {
 		// 出勤時間が0分かつ土日祝でなく、備考欄に「有給」と書いてある日を合算
-		long count = workList.stream().filter(a -> "有給".equals(a.getNote()) && a.getMinutes() == 0 && Holiday.judgeHoliday(LocalDate.parse(a.getWorkDay(), dtf)) != null && !a.getDayOfWeek().equals("土") && !a.getDayOfWeek().equals("日")).count();
+		long count = workList.stream().filter(a -> "有給".equals(a.getNote()) && a.getMinutes() == 0 && Holiday.judgeHoliday(LocalDate.parse(a.getWorkDay(), dtf)) == null && !a.getDayOfWeek().equals("土") && !a.getDayOfWeek().equals("日")).count();
 		return (int) count;
 	}
 
