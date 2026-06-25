@@ -246,7 +246,6 @@ public class WorkTableController {
 			if(!ad.isBreakDay()) {
 				if(!ad.isRegistration()) {
 					LogUtil.warn("全ての勤怠を提出していません。");
-					model.addAttribute("workList", submittedList);
 					model.addAttribute("message", "全ての勤怠を提出していません。");
 					// 入力欄に今の年月ではなく、勤務表を提出した年月をセットしておく
 					model.addAttribute("WorkTableRequest", tableRequest);
