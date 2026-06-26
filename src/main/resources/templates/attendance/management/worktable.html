@@ -193,9 +193,6 @@
 				<input type="hidden" name="workMonth" th:value="${WorkTableRequest.workMonth}">
 				<button type="submit">勤務表提出</button>
 			</form>
-			<!--			<button type="button"-->
-			<!--				th:onclick="location.href=[[@{/attendance/management/worksubmission(year=${WorkTableRequest.workYear},month=${WorkTableRequest.workMonth})}]]">勤務表提出</button>-->
-			<!--*/location.href=以降の動的変更部分は、どうやら文字列結合扱いしてあげないとうまく解釈されない模様/*-->
 			<a id="admin-panel" th:if="${shain.loginId == 'kisohara'}"
 				th:href="@{/attendance/management/restore}">社員復旧</a>
 

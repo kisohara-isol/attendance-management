@@ -8,6 +8,7 @@ import java.time.Period;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collections;
 import java.util.List;
@@ -146,5 +147,45 @@ public class DateTimeUtil {
 			return Optional.empty();
 		}
 		return Optional.of(matcher.group(1) + matcher.group(2));
+	}
+
+	/**
+	 * 与えられた2つの日時間の経過時間を、
+	 * 00時00分を基準とした分の経過を表現した二次元配列で取得します。
+	 * <p>親配列の要素数は、2つの日時の経過日数+1に等しいです<p>
+	 * <p>子配列の一つ目の要素は、渡された早い日時の経過時間(分)もしくは0、<br>
+	 * 二つ目の要素は渡された遅い日時の経過時間(分)もしくは1440が入ります。</p>
+	 * <p>例えば同じ年月日の01時00分と23時00分が渡されたとき、このメソッドは
+	 * {{60,1380}}という配列を返します。<br>
+	 * また、ある日の12時と翌日の12時が渡された場合、このメソッドは
+	 * {{720,1440},{0,720}}という配列を返します。<br>
+	 * 経過日数が1日より大きい場合、その間は{0,1440}という配列で満たされます。
+	 * </p>
+	 * 
+	 * @param time1 日時1 time2との前後関係は問いません
+	 * @param time2 日時2
+	 * @return int型二次元配列
+	 */
+	public static int[][] elapsedMinutesFromMidnight(LocalDateTime time1, LocalDateTime time2) {
+		LocalDateTime start = time1.isBefore(time2) ? time1 : time2;
+		LocalDateTime end = time1.isBefore(time2) ? time2 : time1;
+
+		//間の日数をintで取得
+		int diffDays = (int) ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate());
+		//親配列の要素数が間の日数+1、子配列の要素数が2の多次元配列
+		int[][] result = new int[diffDays + 1][2];
+		for (int i = 0; i <= diffDays; i++) {
+			//その日の始まり:一日目ならstartの時間、それ以外は00時00分
+			var thisDayStart = (i == 0) ? start.toLocalTime() : LocalTime.MIN;
+			result[i][0] = thisDayStart.getHour() * 60 + thisDayStart.getMinute();
+			//その日の終わり:最終日ならendの時間、それ以外は23時59分 <=24:00でなくていい?
+			if (i == diffDays) {
+				var thisDayEnd = end.toLocalTime();
+				result[i][1] = thisDayEnd.getHour() * 60 + thisDayEnd.getMinute();
+			} else {
+				result[i][1] = 24 * 60;
+			}
+		}
+		return result;
 	}
 }

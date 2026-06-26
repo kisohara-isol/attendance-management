@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>勤務表提出画面</title>
+	<meta name="author" content="kato">
+</head>
+
+<body>
+	<h2>勤務表提出</h2>
+	<div th:object="${workResult}">
+		<div>
+			<label>出勤対象日数:</label>
+			<span th:text="*{expectedWorkingDate}"></span>
+		</div>
+		<div>
+			<label>勤務日数:</label>
+			<span th:text="*{actualWorkingDate}"></span>
+		</div>
+		<div>
+			<label>有給:</label>
+			<span th:text="*{ptoNum}"></span>
+		</div>
+		<div>
+			<label>総支給額:</label>
+			<span th:text="*{grossSalary}"></span>
+		</div>
+
+	</div>
+	<form th:action="@{/attendance/management/workcomplete}" th:object="${workResult}" method="POST">
+		<input type="hidden" th:field="*{year}">
+		<input type="hidden" th:field="*{month}">
+		<input type="hidden" th:field="*{expectedWorkingDate}">
+		<input type="hidden" th:field="*{actualWorkingDate}">
+		<input type="hidden" th:field="*{ptoNum}">
+		<input type="hidden" th:field="*{grossSalary}">
+		<button type="submit">確定</button>
+	</form>
+</body>
+
+</html>

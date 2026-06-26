@@ -33,7 +33,12 @@ import lombok.Data;
 public class AttendanceData {
 	/** 定時の勤務時間(分)*/
 	public static final int REGULAR_WORK_TIME = 480;
-	
+	//時間のフォーマット LocalTime用と正規表現用が1:1で対応
+	/**"HH:mm"形式のLocalTime用フォーマット*/
+	public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");//LocalTime用フォーマット
+	/**"HH:mm"形式の正規表現用パターン*/
+	public static final Pattern TIME_PATTERN = Pattern.compile("^\\d{2,}:\\d{2}");//文字列用正規表現 時間部分が3桁以上も許容
+
 	/** 社員を一意に識別するための社員ID（ShainDataのIDと紐づきます） */
 	private int shainId;
 
@@ -60,10 +65,10 @@ public class AttendanceData {
 
 	/** 出勤日の曜日（例: "月", "火"） */
 	private String dayOfWeek;
-	
+
 	/**祝日の場合、その種類*/
 	private String holiday;
-	
+
 	/**
 	 * 受け取った勤務実績データに対して、日付と時間の書式変更や<br>
 	 * 休日判定、勤務時間と残業時間の設定などのセットアップを行う。
@@ -71,9 +76,6 @@ public class AttendanceData {
 	 * @return セットアップされた勤務実績データ
 	 */
 	public static AttendanceData setUpAttendanceData(AttendanceData attendanceData) {
-		//時間のフォーマット LocalTime用と正規表現用が1:1で対応
-		final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");//LocalTime用フォーマット
-		final Pattern timePattern = Pattern.compile("^\\d{2,}:\\d{2}");//文字列用正規表現 時間部分が3桁以上も許容
 
 		var workDay = LocalDate.parse(attendanceData.getWorkDay());
 
@@ -85,7 +87,7 @@ public class AttendanceData {
 		//時間の書式を変更・格納
 		//変更用ロジック
 		UnaryOperator<String> formatWorkTime = x -> {
-			var matcher = timePattern.matcher(x);
+			var matcher = TIME_PATTERN.matcher(x);
 			matcher.find();
 			//timePatternにマッチした部分のみを返却
 			return matcher.group();
@@ -97,9 +99,9 @@ public class AttendanceData {
 
 		//出勤時間と退勤時間に日付情報を結合する
 		var startDateTime = DateTimeUtil
-				.correctOver24Hour(workDay, formattedStartTimeString, timeFormat);
+				.correctOver24Hour(workDay, formattedStartTimeString, TIME_FORMAT);
 		var endDateTime = DateTimeUtil
-				.correctOver24Hour(workDay, formattedEndTimeString, timeFormat);
+				.correctOver24Hour(workDay, formattedEndTimeString, TIME_FORMAT);
 		//休みの判別基準は「00時00分」
 		var breakExpression = LocalDateTime.of(workDay, LocalTime.of(0, 0));
 
