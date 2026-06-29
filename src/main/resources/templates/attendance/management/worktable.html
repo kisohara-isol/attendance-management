@@ -117,7 +117,10 @@
 
 	<div>
 		<h2> 勤務表</h2>
-
+		<!--セッション失効以外で不都合があり飛ばされたときのメッセージ-->
+		<div th:if="${abnormalredirect}">
+			<span class="error-message" th:text="${abnormalredirect}"></span>
+		</div>
 		<div class="shain-info">
 			<span> 社員名：</span>
 			<span> [[${shain.shainName}]]</span>

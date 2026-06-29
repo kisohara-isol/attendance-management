@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>勤務表提出完了画面</title>
+	<meta name="author" content="kato">
+	<script>
+		window.onload = function () {
+			window.location.href = '/attendance/management/workcomplete/download'
+		};
+	</script>
+</head>
+
+<body>
+	<h2>勤務表提出完了</h2>
+	<div>
+		完了しました。<br>
+		<span th:text="|明細は${fileName}ファイルを参照してください。|"></span>
+	</div>
+	<div>
+		<a th:href="@{/attendance/management/worktable}">勤務表画面へ</a>
+	</div>
+	<div>
+		<a th:href="@{/attendance/management/login}">ログイン画面へ</a>
+	</div>
+</body>
+
+</html>

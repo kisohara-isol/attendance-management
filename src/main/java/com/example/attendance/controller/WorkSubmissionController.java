@@ -1,13 +1,9 @@
 package com.example.attendance.controller;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +21,7 @@ import com.example.attendance.entity.ShainData;
 import com.example.attendance.service.WorkSubmissionService;
 import com.example.attendance.util.ControllerUtil;
 import com.example.attendance.util.LogUtil;
+import com.example.attendance.util.MessagesPropertiesUtil;
 
 /** /attendance/management/worksubmissionのコントローラ*/
 @Controller
@@ -60,6 +57,7 @@ public class WorkSubmissionController {
 			//データベースアクセスのどこかでエラーが発生した場合
 			LogUtil.error("E10001");
 			//勤務表一覧画面へ戻る
+			redirect.addFlashAttribute("abnormalredirect", MessagesPropertiesUtil.getErrorMessage("E10001"));
 			return "redirect:attendance/management/worktable";
 		}
 		return "/attendance/management/worksubmission";
@@ -67,18 +65,16 @@ public class WorkSubmissionController {
 	}
 
 	/**
-	 * 勤務結果のCSVファイルを作成、出力し、
-	 * @param result
-	 * @param session
-	 * @param model
-	 * @param redirect
-	 * @param response
-	 * @return
+	 * 勤務結果CSVファイルのファイル名と中身を作成し、workcompleteにリダイレクトして渡す。
+	 * @param result HTML側で表示した一か月分の勤務情報
+	 * @param session HTTPSession
+	 * @param model モデル
+	 * @param redirect ファイル名、中身をここに格納し、リダイレクト先で取り出す
+	 * @return ファイルの内容を作成後、workcompleteに遷移。
 	 */
 	@PostMapping("/attendance/management/workcomplete")
 	public String createCSVAndRedirect(@ModelAttribute("workResult") WorkResultInformation result, HttpSession session,
-			Model model, RedirectAttributes redirect,
-			HttpServletResponse response) {
+			Model model, RedirectAttributes redirect) {
 
 		if (!ControllerUtil.isKeepingSession(session, "loginShain")) {
 			LogUtil.warn("W99999");
@@ -100,22 +96,9 @@ public class WorkSubmissionController {
 				leftAlignedName,
 				result.getActualWorkingDate(),
 				result.getGrossSalary());
-		//バイト文字列に変換
-		byte[] contentsByte = contents.getBytes(Charset.defaultCharset());
 
-		//ファイル出力
-		try (OutputStream os = response.getOutputStream()) {
-			response.setContentType("application/octet-stream");
-			response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
-			response.setContentLength(contentsByte.length);
-			os.write(contentsByte);
-			os.flush();
-			LogUtil.info("勤務表出力完了[ファイル名:{}]", fileName);
-		} catch (IOException e) {
-			LogUtil.warn(e.getStackTrace().toString());
-		}
-
-		model.addAttribute("fileName", fileName);
+		redirect.addFlashAttribute("fileName", fileName);
+		redirect.addFlashAttribute("contents", contents);
 		return "redirect:/attendance/management/workcomplete";
 	}
 
