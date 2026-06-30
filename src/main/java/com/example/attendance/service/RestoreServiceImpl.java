@@ -1,29 +1,41 @@
 package com.example.attendance.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import com.example.attendance.controller.RestoreController;
 import com.example.attendance.repository.ShainDataMapper;
 
 /**
- * /attendance/management/restoreのサービスクラス
+ * ロック状態の社員アカウントを復旧（有効化）するためのビジネスロジックを提供するサービス実装クラス。
+ *
  * @author kato
  */
 @Service
 public class RestoreServiceImpl implements RestoreService {
-	/**DBの更新に用いるmapper*/
+
+	/** 社員データの更新に用いるマッパーオブジェクト */
 	@Autowired
 	private ShainDataMapper mapper;
 
 	/**
-	 * 社員IDを受け取って、対象アカウントのロックを解除し、結果をbooleanで返す。
-	 * <p>DB接続に障害が発生した場合はDataAccessException
-	 * @param shainId 社員ID
-	 * @return データ1件のみの更新に成功した場合true
+	 * ログインIDを基に、対象アカウントのロックを強制解除します。
+	 * <p>
+	 * このメソッドは管理者画面からのみ呼び出されます。
+	 * 内部で {@link ShainDataMapper#resetStopFlugByShainId(int)} を実行します。
+	 * </p>
+	 *
+	 * @param shainId 解除対象の社員ID
+	 * @return 復旧に成功した場合は true
+	 * @throws DataAccessException DB接続に失敗した場合
+	 * @see RestoreController
+	 * @since 2026/06/25
 	 */
 	@Override
 	public boolean executeRestoreShain(int shainId) {
-		boolean result = mapper.resetStopFlugByShainId(shainId) == 1 ? true : false;
+		// 更新成功数が 1 件であるかを判定
+		boolean result = mapper.resetStopFlugByShainId(shainId) == 1;
 		return result;
 	}
 }

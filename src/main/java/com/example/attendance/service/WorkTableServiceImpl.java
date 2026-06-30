@@ -16,14 +16,25 @@ import com.example.attendance.repository.WorkTableMapper;
 import com.example.attendance.util.LogUtil;
 
 /**
- * 勤務表に関する業務ロジックを提供するサービス実装クラスです。
+ * 勤務表照会カレンダーの組み立て、および日々の労働分数・残業時間の動的計算を行うビジネスロジック実装クラス。
+ *
+ * @author Hagiwara
  */
 @Service
 public class WorkTableServiceImpl implements WorkTableService {
 
+	/** 勤怠実績および祝日ルールのデータを参照するマッパー */
 	@Autowired
 	private WorkTableMapper workTableMapper;
 
+	/**
+	 * 指定された社員IDおよび年月に対応する1ヶ月分の勤務実績リストを取得し、曜日情報の補完や実労働分数の計算を反映して返します。
+	 *
+	 * @param shainId 対象の社員ID
+	 * @param year    照会対象の年
+	 * @param month   照会対象の月
+	 * @return 閲覧用に整形・計算済みの勤務実績エンティティのリスト。DBエラー時は空のリストを返却
+	 */
 	@Override
 	public List<AttendanceData> getAttendanceList(int shainId, int year, int month) {
 
@@ -44,6 +55,7 @@ public class WorkTableServiceImpl implements WorkTableService {
 
 		for (AttendanceData ad : dbList) {
 
+			// 曜日の自動算出と日付文字列のトリミング
 			if (ad.getWorkDay() != null) {
 				String rawDay = ad.getWorkDay();
 				try {
@@ -59,11 +71,12 @@ public class WorkTableServiceImpl implements WorkTableService {
 				}
 			}
 
-			String startTimeStr = ad.getStartTime() != null ? ad.getStartTime().trim() : "00:00:00";
+			String startTimeStr = ad.getStartTime().trim();
 			String endTimeStr = ad.getEndTime() != null ? ad.getEndTime().trim() : "00:00:00";
 
 			int startHour = 0, startMin = 0, endHour = 0, endMin = 0;
 
+			// 時・分の切り出し
 			if (startTimeStr.contains(":")) {
 				String[] sParts = startTimeStr.split(":");
 				startHour = Integer.parseInt(sParts[0].trim());
@@ -78,8 +91,11 @@ public class WorkTableServiceImpl implements WorkTableService {
 			int startTotalMinutes = startHour * 60 + startMin;
 			int endTotalMinutes = endHour * 60 + endMin;
 
-			// 💡 【超安全化】確実に「退勤 - 出勤」で労働分数を算出
+			// 確実に「退勤 - 出勤」で拘束（労働）分数を算出
 			long minutes = (long) endTotalMinutes - (long) startTotalMinutes;
+			if (minutes < 0) {
+				minutes = 0;
+			}
 			ad.setMinutes(minutes);
 
 			// 休み判定
@@ -87,27 +103,26 @@ public class WorkTableServiceImpl implements WorkTableService {
 				ad.setBreakDay(true);
 			}
 
-			// 出勤時間の表記維持
+			// 出勤時間の表示整形（24時間超の表記を維持）
 			if (startHour >= 24) {
 				ad.setStartTime(String.format("%d:%02d", startHour, startMin));
 			} else {
 				ad.setStartTime(String.format("%02d:%02d", startHour, startMin));
 			}
 
-			// 退勤時間の表記維持
+			// 退勤時間の表示整形（24時間超の表記を維持）
 			if (endHour >= 24) {
 				ad.setEndTime(String.format("%d:%02d", endHour, endMin));
 			} else {
 				ad.setEndTime(String.format("%02d:%02d", endHour, endMin));
 			}
 
-			// 💡 【残業時間計算のバグを完全駆除】
-			// 実労働が9時間（540分＝定時8時間＋休憩1時間）を超えている場合、絶対にここを通します
-			if (minutes > 540) {
+			// 💡【残業時間計算：境界値補正版】
+			// 実労働が9時間（540分＝法定8時間＋一律休憩1時間）を1分でも超えている場合、超過した時間を残業として算出
+			if (minutes > 540 && !ad.isBreakDay()) {
 				long over = minutes - 540;
 				int overHour = (int) (over / 60);
 				int overMinutes = (int) (over % 60);
-				// Thymeleafが解釈しやすいよう、余計な空白を入れず「8:00」の形でガチッと固定
 				ad.setOverTime(String.format("%d:%02d", overHour, overMinutes));
 			} else {
 				ad.setOverTime("");

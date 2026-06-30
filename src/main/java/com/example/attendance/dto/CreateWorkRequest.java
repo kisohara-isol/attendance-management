@@ -2,6 +2,7 @@ package com.example.attendance.dto;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
@@ -25,6 +26,7 @@ public class CreateWorkRequest {
 	private LocalDate workDay;
 
 	/** 「出勤時間(HHMM)」もしくは文字列「休み」 */
+	@NotEmpty(message = "{W30002}")
 	@Pattern(regexp = "^(([0-3][0-9]|4[0-7])[0-5][0-9]|休み)?$", message = "{W30004}") // 💡出勤側も24時超え入力や「休み」を考慮
 	private String startTime;
 

@@ -19,22 +19,23 @@ import com.example.attendance.util.CreateWorkRequestFields;
 import com.example.attendance.util.LogUtil;
 
 /**
- * /attemdance/management/workinputのコントローラクラス
+ * 勤務情報の新規登録における、初期入力画面の制御を行うコントローラークラス。
+ *
  * @author kato
  */
 @Controller
 public class WorkInputController {
 
 	/**
-	 * /attendance/management/workinputの描写メソッド
-	 * @param request 画面の入力を保持するdto
-	 * @param model モデル
-	 * @param session セッション
-	 * @param redirect リダイレクト
-	 * @return /attendance/management/workinputの描写
-	 */
-	/**
-	 * /attendance/management/workinputの描写メソッド
+	 * 勤務新規入力画面を表示します。
+	 *
+	 * @param model    画面制御用Model
+	 * @param session  HTTPセッション
+	 * @param redirect リダイレクト用オブジェクト
+	 * @param year     選択された年
+	 * @param month    選択された月
+	 * @param dayStr   選択された日
+	 * @return 勤務入力画面のHTMLパス
 	 */
 	@GetMapping(value = "/attendance/management/workinput")
 	public String display(
@@ -43,7 +44,7 @@ public class WorkInputController {
 			RedirectAttributes redirect,
 			@RequestParam(value = "workYear", required = false) String year,
 			@RequestParam(value = "workMonth", required = false) String month,
-			@RequestParam(value = "selectedDay", required = false) String dayStr) { // selectedDay で安全に受け取る
+			@RequestParam(value = "selectedDay", required = false) String dayStr) {
 
 		// セッションの確認
 		boolean isKeepingSession = Collections.list(session.getAttributeNames())
@@ -61,8 +62,6 @@ public class WorkInputController {
 				int y = Integer.parseInt(year);
 				int m = Integer.parseInt(month);
 				int d = Integer.parseInt(dayStr);
-
-				// ここで安全に LocalDate 型をセット（400エラーの発生源を根本から遮断）
 				createWorkRequest.setWorkDay(java.time.LocalDate.of(y, m, d));
 			} catch (Exception e) {
 				LogUtil.warn("日付の組み立てに失敗しました: {}-{}-{}", year, month, dayStr);
@@ -70,28 +69,27 @@ public class WorkInputController {
 		}
 
 		model.addAttribute("loginShain", session.getAttribute("loginShain"));
-
-		// ★ HTMLの th:object="${createWorkRequest}" に渡す
 		model.addAttribute("createWorkRequest", createWorkRequest);
 
 		return "attendance/management/workinput";
 	}
 
 	/**
-	 * バリデーションチェックを行い、エラーがなければ/attendance/management/workconfirmへリダイレクトする
-	 * @param request 入力内容を保持するdto。バリデーションの対象
-	 * @param result バリデーションの結果
-	 * @param model
-	 * @param redirect
-	 * @return /attendance/management/workconfirmへのリダイレクト
+	 * 新規入力された勤務データの単項目および相関チェックを行い、問題がなければ確認画面へリダイレクトします。
+	 *
+	 * @param request       画面から送信された入力データ
+	 * @param result        検証結果オブジェクト
+	 * @param model         画面制御用Model
+	 * @param redirect      確認画面へフラッシュスコープ経由でデータを引き渡すためのオブジェクト
+	 * @return 成功時は勤務確認画面へのリダイレクト、エラー時は自画面遷移
 	 */
 	@PostMapping("/attendance/management/workinput")
-	public String redilect(@ModelAttribute @Validated CreateWorkRequest request, BindingResult result, Model model,
+	public String redilect(@ModelAttribute("createWorkRequest") @Validated CreateWorkRequest request, BindingResult result, Model model,
 			RedirectAttributes redirect) {
-		//バリデーションチェック
+		
+		// 💡【修正】@ModelAttribute("createWorkRequest") の名称をHTML側に明示的に合わせてバグを完全防止！
 		if (result.hasErrors()) {
 			result.getFieldErrors().stream().forEach(x -> {
-				//フィールド名に対応する列挙子を取得
 				CreateWorkRequestFields feild = switch (x.getField()) {
 				case "workDay" -> CreateWorkRequestFields.WORK_DAY;
 				case "startTime" -> CreateWorkRequestFields.START_TIME;
@@ -99,16 +97,13 @@ public class WorkInputController {
 				case "note" -> CreateWorkRequestFields.NOTE;
 				default -> throw new IllegalArgumentException("Unexpected value: " + x.getField());
 				};
-				//アノテーションを取得
 				String annotationType = x.getCode();
 				LogUtil.warn(feild.getErrorCode(annotationType));
 			});
-			return "attendance/management/workinput"; //相対パスにしないとエラーとなると報告有り
+			return "attendance/management/workinput"; 
 		}
 
 		redirect.addFlashAttribute("createWorkRequest", request);
-		//ログを出すかは検討
 		return "redirect:/attendance/management/workconfirm";
 	}
-
 }

@@ -3,8 +3,7 @@
 
 <head>
 	<meta charset="UTF-8">
-	<title>社員復旧画面
-	</title>
+	<title>社員復旧画面</title>
 	<meta name="author" content="Soeda">
 	<style>
 		.container {
@@ -22,6 +21,16 @@
 			margin-bottom: 15px;
 			font-size: 14px;
 		}
+
+		/* 💡 ボタンを横並びにするためのCSSを追加 */
+		.button-group {
+			display: flex;
+			/* 横並びにする指定 */
+			gap: 10px;
+			/* ボタンとボタンの間のすき間（お好みで調整） */
+			margin-top: 10px;
+			/* 上の入力欄とのすき間 */
+		}
 	</style>
 </head>
 
@@ -34,10 +43,15 @@
 			<div th:if="${errorMessage} OR ${#fields.hasErrors('shainId')}" th:class="error-message">
 				<th:block th:if="${#fields.hasErrors('shainId')}" th:errors="*{shainId}"></th:block>
 				<th:block th:if="${errorMessage}" th:text="${errorMessage}"></th:block>
-				<!--/*thymeleafのth:ifでは文字列が存在する場合trueと評価される*/-->
 			</div>
-			<br><button type="submit">復旧</button>
+
+			<div class="button-group">
+				<button type="submit">復旧</button>
 		</form>
+		<form th:action="@{/attendance/management/back_table}" method="POST">
+			<button type="submit">戻る</button>
+		</form>
+	</div>
 	</div>
 </body>
 

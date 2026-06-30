@@ -2,43 +2,40 @@ package com.example.attendance.dto;
 
 import lombok.Data;
 
+/**
+ * 勤怠確定（申請）画面および給与計算の結果データを保持するデータ転送オブジェクト（DTO）。
+ *
+ * @author kato
+ */
 @Data
 public class WorkSubmissionRequest {
 
-	/**
-	 * 月ごとの平日日数
-	 * */
+	/** 月ごとの総平日日数（祝日を除く） */
 	private int mustDay;
 
-	/**
-	 * 社員ごとの月の出社日数
-	 * */
+	/** 社員ごとの対象月の実出社日数 */
 	private int attendanceDay;
 
-	/**
-	 * 月に有休を使った回数
-	 * */
+	/** 対象月に有給休暇を取得した日数 */
 	private int paidHoliDay;
 
-	/**
-	 * 残業時間
-	 * */
+	/** 当月の総残業時間（時間単位の小数表記） */
 	private double overTime;
 
-	/**
-	 * 深夜作業時間
-	 * */
-	private double lateNigthTime;
+	/** * 当月の総深夜作業時間（時間単位の小数表記） 
+	 * <p>💡【修正】タイポ（lateNigthTime）を正しいスペル（lateNightTime）に補正しました。</p>
+	 */
+	private double lateNightTime;
 
-	/**
-	 * 休日作業時間
-	 * */
-
+	/** 当月の総休日作業時間（時間単位の小数表記） */
 	private double holidayTime;
 
-	/**
-	 * 月の給料
-	 * */
+	/** 計算された当月の確定支給総額（給与） */
 	private int salary;
 
+	/**
+	 * デフォルトコンストラクタ。
+	 */
+	public WorkSubmissionRequest() {
+	}
 }

@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -32,7 +31,7 @@ import com.example.attendance.service.WorkTableService;
 import com.example.attendance.util.LogUtil;
 
 /**
- * 勤務表照会画面の表示およびデータ検索リクエストを制御するコントローラークラス。
+ * 勤務表照会画面の表示、検索、および入力・確定処理への遷移を制御するコントローラークラス。
  */
 @Controller
 public class WorkTableController {
@@ -43,7 +42,7 @@ public class WorkTableController {
 	private WorkTableMapper workTableMapper;
 
 	/**
-	 * 勤務表照会ページの初期表示（当月）を行います。
+	 * 勤務表照会ページの初期表示（デフォルトでログイン当月）を行います。
 	 */
 	@GetMapping(value = "/attendance/management/worktable")
 	public String display(Model model, HttpSession session, @ModelAttribute WorkTableRequest request,
@@ -52,14 +51,11 @@ public class WorkTableController {
 
 		LogUtil.info("勤務表照会ページに飛びました。");
 
-		// セッションからユーザー情報を取得
-		ShainData shain = (ShainData) session.getAttribute("loginShain");
-
-		// セッション切れチェック
-		if (session == null || shain == null) {
+		if (session == null || session.getAttribute("loginShain") == null) {
 			LogUtil.warn("W99999");
 			return "redirect:/attendance/management/login";
 		}
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
 		model.addAttribute("shain", shain);
 
 		int year = workYear;
@@ -82,7 +78,7 @@ public class WorkTableController {
 	}
 
 	/**
-	 * 指定された年月の勤務表データを検索し、カレンダー形式で表示します。
+	 * 指定された年月の勤務表データをバリデーションの上で検索し、カレンダー形式で一覧再描画します。
 	 */
 	@PostMapping(value = "/attendance/management/worktable")
 	public String table(Model model, @Validated @ModelAttribute("WorkTableRequest") WorkTableRequest request,
@@ -90,26 +86,23 @@ public class WorkTableController {
 
 		LogUtil.info("入力処理を開始します。");
 
-		ShainData shain = (ShainData) session.getAttribute("loginShain");
-		if (session == null || shain == null) {
+		if (session == null || session.getAttribute("loginShain") == null) {
 			LogUtil.warn("W99999");
 			return "attendance/management/login";
 		}
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
 		model.addAttribute("shain", shain);
 
 		String workYear = request.getWorkYear();
 		String workMonth = request.getWorkMonth();
 
-		// 単項目バリデーション（@Min, @Max, @NotBlank などDTO側のチェック）のエラーハンドリング
+		// 現在日時を暫定安全用フォールバックとして取得
+		LocalDate currentFallback = LocalDate.now();
+
+		// 💡単項目チェックエラー時の対応（カレンダーを空文字の安全なリストで埋めてクラッシュを防ぐ）
 		if (bindingResult.hasErrors()) {
-			String errorMessage = "";
-			for (ObjectError oe : bindingResult.getAllErrors()) {
-				errorMessage += oe.getDefaultMessage();
-			}
-			if (errorMessage.contains("2020～9999 までの年を入力してください。"))
-				LogUtil.warn("W20001");
-			if (errorMessage.contains("月を入力してください。"))
-				LogUtil.warn("W20002");
+			List<AttendanceData> errorCalendar = generateMonthlyCalendar(shain.getShainId(), currentFallback.getYear(), currentFallback.getMonthValue());
+			model.addAttribute("workList", errorCalendar);
 			return "attendance/management/worktable";
 		}
 
@@ -122,13 +115,16 @@ public class WorkTableController {
 		} catch (NumberFormatException e) {
 			bindingResult.rejectValue("workYear", "error.workYear", "YYYY形式で入力してください。");
 			LogUtil.warn("W20003");
+			List<AttendanceData> errorCalendar = generateMonthlyCalendar(shain.getShainId(), currentFallback.getYear(), currentFallback.getMonthValue());
+			model.addAttribute("workList", errorCalendar);
 			return "attendance/management/worktable";
 		}
 
-		// 💡【追加】2020年から9999年の範囲外だった場合のエラーハンドリング
 		if (year < 2020 || 9999 < year) {
 			bindingResult.rejectValue("workYear", "error.workYear", "2020～9999 までの年を入力してください。");
-			LogUtil.warn("W20001"); // W20001の警告ログを出力
+			LogUtil.warn("W20001");
+			List<AttendanceData> errorCalendar = generateMonthlyCalendar(shain.getShainId(), currentFallback.getYear(), currentFallback.getMonthValue());
+			model.addAttribute("workList", errorCalendar);
 			return "attendance/management/worktable";
 		}
 
@@ -138,15 +134,20 @@ public class WorkTableController {
 		} catch (NumberFormatException e) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
 			LogUtil.warn("W20004");
+			List<AttendanceData> errorCalendar = generateMonthlyCalendar(shain.getShainId(), year, currentFallback.getMonthValue());
+			model.addAttribute("workList", errorCalendar);
 			return "attendance/management/worktable";
 		}
 
 		if (month < 1 || 12 < month) {
 			bindingResult.rejectValue("workMonth", "error.workMonth", "1から12の数字を入力してください。");
 			LogUtil.warn("W20004");
+			List<AttendanceData> errorCalendar = generateMonthlyCalendar(shain.getShainId(), year, currentFallback.getMonthValue());
+			model.addAttribute("workList", errorCalendar);
 			return "attendance/management/worktable";
 		}
 
+		// 💡すべてのチェックが通過した時のみ本番カレンダーを読み出す
 		List<AttendanceData> calendarList = generateMonthlyCalendar(shain.getShainId(), year, month);
 		model.addAttribute("workList", calendarList);
 
@@ -154,7 +155,7 @@ public class WorkTableController {
 	}
 
 	/**
-	 * 変更ボタンを押された時の処理。
+	 * 日別リストの「変更」リンク押下時、対象年月日を安全に引き継いで新規登録または修正入力画面へリダイレクトします。
 	 */
 	@PostMapping(value = "/attendance/management/worktable/to-input")
 	public String input(Model model, @ModelAttribute("WorkTableRequest") WorkTableRequest request,
@@ -172,25 +173,28 @@ public class WorkTableController {
 	}
 
 	/**
-	 * 確定申請ボタンを押下で勤怠確定確認画面へ遷移
+	 * 確定申請ボタン押下時、その月のすべての日の勤務実績が入力完了しているか検証し、問題なければ申請画面に遷移します。
 	 */
 	@PostMapping(value = "/attendance/management/to_worksubmission")
 	public String confirm(RedirectAttributes redirectAttributes,
 			@ModelAttribute("WorkTableRequest") WorkTableRequest request, HttpSession session, Model model) {
 
+		if (session == null || session.getAttribute("loginShain") == null) {
+			LogUtil.warn("W99999");
+			return "redirect:/attendance/management/login";
+		}
 		ShainData shain = (ShainData) session.getAttribute("loginShain");
 
 		String year = request.getWorkYear();
 		String month = request.getWorkMonth();
 
 		int totalDaysInMonth = YearMonth.of(Integer.parseInt(year), Integer.parseInt(month)).lengthOfMonth();
-
 		int registeredDays = workTableMapper.countRegisteredDays(shain.getShainId(), year,
 				String.format("%02d", Integer.parseInt(month)));
 
 		if (Integer.parseInt(year) < 2020 || 9999 < Integer.parseInt(year)) {
 			redirectAttributes.addFlashAttribute("errorMessage", "2020年～9999年以外の期間は申請できません。");
-			LogUtil.warn("W20001"); // W20001の警告ログを出力
+			LogUtil.warn("W20001"); 
 			return "redirect:/attendance/management/worktable";
 		}
 		if (registeredDays < totalDaysInMonth) {
@@ -207,7 +211,7 @@ public class WorkTableController {
 	}
 
 	/**
-	 * 💡 カレンダーのマス目にデータを安全にマッピングする処理
+	 * 💡 DBからの取得データとカレンダー日付を安全にマッピング・補間して画面用に整形します。
 	 */
 	private List<AttendanceData> generateMonthlyCalendar(int shainId, int year, int month) {
 		List<AttendanceData> dbWorkList = workTableService.getAttendanceList(shainId, year, month);
@@ -257,7 +261,6 @@ public class WorkTableController {
 				fullMonthList.add(emptyData);
 			}
 		}
-
 		return fullMonthList;
 	}
 }

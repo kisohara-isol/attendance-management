@@ -3,23 +3,35 @@ package com.example.attendance.dto;
 import jakarta.validation.constraints.NotBlank;
 
 import lombok.Data;
+
 /**
  * 勤務修正画面からの入力値を保持するリクエストデータ転送オブジェクト（DTO）。
- * <p>
- * ユーザーが画面上で入力した「新しい出勤時間」「新しい退勤時間」「新しい備考」の値を
- * コントローラーへ一括して引き渡すために使用されます。
- * 出勤時間に対しては、未入力（空文字）を防ぐためのバリデーションチェックが設定されています。
- * </p>
- * * @author Hagiwara
+ *
+ * @author Hagiwara
  */
 @Data
 public class RetouchRequest {
 	
-	/**出勤時間*/
+	/**
+	 * 新しい出勤時間。
+	 * <p>必須項目です。"休み" または "0900" のようなHHmm形式を期待します。</p>
+	 */
 	@NotBlank(message = "出勤時間が空白です。")
 	private String startTime;
-	/**退勤時間*/
+	
+	/**
+	 * 新しい退勤時間。
+	 * <p>💡【修正】未入力によるパースクラッシュを防ぐため、こちらも必須バリデーションを追加します。</p>
+	 */
+	@NotBlank(message = "退勤時間が空白です。")
 	private String endTime;
-	/**備考*/
+	
+	/** 新しい備考（変更理由など） */
 	private String note;
+
+	/**
+	 * デフォルトコンストラクタ。
+	 */
+	public RetouchRequest() {
+	}
 }

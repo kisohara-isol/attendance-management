@@ -16,40 +16,42 @@ import com.example.attendance.entity.ShainData;
 import com.example.attendance.service.WorkSubmissionService;
 import com.example.attendance.util.LogUtil;
 
+/**
+ * 1ヶ月の勤務表の確定申請処理、および概算給与の集計・算出画面を制御するコントローラークラス。
+ *
+ * @author kato
+ */
 @Controller
 public class WorkSubmissionController {
+	
 	@Autowired
 	private WorkSubmissionService submissionService;
 
 	/**
-	 * worktableから指定された年・月を受け取る
-	 * 指定された月の平日（祝日を除く）の日数を算出
-	 * 受け取った情報でDBから情報を受け取る
-	 * 実際働いた日数を算出（有給は備考欄から算出）
-	 * 社員情報から給与の情報を取り出し計算
-	 * 時間ごとに条件を付け総額を算出 
-	 * */
-	// WorkSubmissionController 側
+	 * 月別の勤務情報および給与概算の集計結果を含む、確定前確認画面を表示します。
+	 *
+	 * @param model      画面制御用Model
+	 * @param session    HTTPセッション
+	 * @param submission 算出結果を保持・バインドするDTO
+	 * @param workYear   確定対象年
+	 * @param workMonth  確定対象月
+	 * @return 勤務申請確定画面のHTMLパス
+	 */
 	@GetMapping("/attendance/management/worksubmission")
 	public String display(Model model, HttpSession session,
 			@ModelAttribute("WorkSubmissionRequest") WorkSubmissionRequest submission,
 			@RequestParam("Year") int workYear,
 			@RequestParam("Month") int workMonth) {
 
-		// セッションからユーザー情報を取得
-		ShainData shain = (ShainData) session.getAttribute("loginShain");
-
-		// セッション切れチェック
-		if (session == null || shain == null) {
+		// 💡【修正】セッション自体のnullチェックを先頭に移動し、ぬるぽによる画面クラッシュを完全に防御！
+		if (session == null || session.getAttribute("loginShain") == null) {
 			LogUtil.warn("W99999");
 			return "redirect:/attendance/management/login";
 		}
+		ShainData shain = (ShainData) session.getAttribute("loginShain");
 		model.addAttribute("shain", shain);
 
-		/**
-		 * 年と月から平日の日数を算出
-		 * 実際働いた日数を算出
-		 * */
+		// サービス層で平日日数、実働日数、有給、深夜・休日手当を含む給与総額を一挙に集計・格納
 		submissionService.dateCounts(workMonth, workYear, submission, shain);
 
 		model.addAttribute("mustDay", submission.getMustDay());
@@ -57,15 +59,15 @@ public class WorkSubmissionController {
 		model.addAttribute("paidHoliDay", submission.getPaidHoliDay());
 		model.addAttribute("salary", submission.getSalary());
 
-		// ⭕ Controller側の修正例
-		// (直前の行で int result = workSubmissionService.dateCounts(month, year, submission, shain); を実行しているはずです)
-
-		// ★ 計算結果が入ったオブジェクト（submission）を、HTMLに合せて "attendanceInfo" という名前で登録する！
+		// 成果物オブジェクトを Thymeleaf 側の変数名（"attendanceInfo"）にバインド
 		model.addAttribute("attendanceInfo", submission);
 
 		return "attendance/management/worksubmission";
 	}
 
+	/**
+	 * 勤務データの確定処理を終了し、給与確定通知（完了）画面へパラメータを維持してリダイレクトします。
+	 */
 	@PostMapping(value = "/attendance/management/toworkcomlete")
 	public String toWorkComlete(@RequestParam("Year") int workYear, @RequestParam("Month") int workMonth,
 			@RequestParam("attendanceDate") int attendanceDate, @RequestParam("salary") int salary,
@@ -79,9 +81,11 @@ public class WorkSubmissionController {
 		return "redirect:/attendance/management/workcomlete";
 	}
 
+	/**
+	 * 申請処理を中断し、元の勤務表照会画面に戻ります。
+	 */
 	@GetMapping("/attendance/management/back_table")
 	public String Confirmed() {
 		return "redirect:/attendance/management/worktable";
-
 	}
 }

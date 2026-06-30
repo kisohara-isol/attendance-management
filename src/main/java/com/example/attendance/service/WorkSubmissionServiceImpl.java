@@ -17,8 +17,42 @@ import com.example.attendance.entity.ShainData;
 import com.example.attendance.repository.ShainDataMapper;
 import com.example.attendance.repository.WorkTableMapper;
 
-@Service // ★Serviceクラスにはこれを忘れずに！
+/**
+ * 勤務確定申請における実績集計および給与計算のビジネスロジックを提供するサービス実装クラス。
+ * <p>
+ * 1ヶ月分の勤務データから、平日の所定日数、実出勤日数（平日・土日祝）、各種労働時間（残業・深夜・休日・遅刻）を算出し、
+ * それらの集計結果を基に手当や欠勤控除を加味した最終的な月給を計算します。
+ * </p>
+ *
+ * @author kato (or Soeda)
+ */
+@Service
 public class WorkSubmissionServiceImpl implements WorkSubmissionService {
+
+	/**
+	 * 1ヶ月分の各種勤務集計データを一時的に保持するための、スレッドセーフな静的インナークラス。
+	 * <p>
+	 * サービス内の複数メソッド間で集計データをひとまとめにして受け渡すための構造体（値オブジェクト）として機能します。
+	 * </p>
+	 */
+	private static class AttendanceSummary {
+		/** 所定（平日）日数 */
+		int weekdaysCount = 0;
+		/** 実際の平日出勤日数（有給含む） */
+		int actualWorkDays = 0;
+		/** 実際の土日祝出勤日数 */
+		int holidayWorkDays = 0;
+		/** 確定後の有給取得日数 */
+		int paidHoliday = 0;
+		/** 総遅刻（不足）時間（分単位） */
+		long totalBehindTime = 0;
+		/** 総残業時間（分単位） */
+		long totalOverMinutes = 0;
+		/** 総深夜労働時間（分単位） */
+		long totalLateNightMinutes = 0;
+		/** 総休日労働時間（分単位） */
+		long totalHolidayMinutes = 0;
+	}
 
 	@Autowired
 	private ShainDataMapper shainDataMapper;
@@ -27,13 +61,49 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 	@Autowired
 	private WorkTableService workTableService;
 
+	/**
+	 * 指定された年月の勤務実績を抽出し、各種日数の集計および総給与の計算を行い、結果を申請DTOに格納します。
+	 *
+	 * @param month      確定対象の月
+	 * @param year       確定対象の年
+	 * @param submission 算出結果（所定日数、出勤日数、有給日数、給与）をセットするためのリクエストDTO
+	 * @param shain      集計対象の社員データ
+	 */
 	@Override
 	public void dateCounts(int month, int year, WorkSubmissionRequest submission, ShainData shain) {
 
-		// 1. 祝日リストの取得（DBから当月の祝日を取得）
-		List<HolidayRule> holidayList = workTableMapper.selectHoliday(month);
+		// 1. 祝日リスト（振替休日含む）の取得
+		List<HolidayRule> holidayList = calculateHolidays(year, month);
 
-		// 検索を高速化＆判定しやすくするため、当月の「祝日の『日（Integer）』」のセットを作る
+		// 2. 1ヶ月分の勤務実績リストを取得
+		List<AttendanceData> workTimeList = workTableService.getAttendanceList(shain.getShainId(), year, month);
+
+		// 3. 勤務実績の集計用コンテナを生成して集計実行
+		AttendanceSummary summary = aggregateAttendance(year, month, workTimeList, holidayList,
+				submission.getPaidHoliDay());
+
+		// 4. 給与計算
+		int totalSalary = calculateTotalSalary(shain.getShainId(), summary);
+
+		// 5. 結果を DTO にセット
+		submission.setMustDay(summary.weekdaysCount);
+		submission.setAttendanceDay(summary.actualWorkDays + summary.holidayWorkDays);
+		submission.setPaidHoliDay(summary.paidHoliday);
+		submission.setSalary(totalSalary);
+	}
+
+	/**
+	 * データベースから取得した祝日情報を基に、当月内の振替休日を補正・計算した完全な祝日リストを生成します。
+	 * <p>
+	 * 祝日が日曜日の場合、翌月曜日以降の最初の平日を振替休日として自動認定します。
+	 * </p>
+	 *
+	 * @param year  対象の年
+	 * @param month 対象の月
+	 * @return 振替休日が追加された当月の祝日ルールリスト
+	 */
+	private List<HolidayRule> calculateHolidays(int year, int month) {
+		List<HolidayRule> holidayList = workTableMapper.selectHoliday(month);
 		Set<Integer> holidayDays = holidayList.stream()
 				.map(HolidayRule::getDay)
 				.filter(java.util.Objects::nonNull)
@@ -41,87 +111,82 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
 		List<HolidayRule> furikaeHolidays = new ArrayList<>();
 
-		// 💡 振替休日の計算ロジック
 		for (HolidayRule holiday : holidayList) {
 			if (holiday.getDay() != null) {
 				LocalDate holidayDate = LocalDate.of(year, month, holiday.getDay());
 
-				// もし祝日が「日曜日 (値: 7)」だった場合
+				// 日曜日が祝日の場合、振替休日を計算
 				if (holidayDate.getDayOfWeek().getValue() == 7) {
-
-					// 翌日（月曜日）からスタートして、祝日じゃない日を探す
 					LocalDate checkDate = holidayDate.plusDays(1);
-
-					// 💡 ループ条件：チェックした日が「すでにDBにある祝日リスト」に含まれている間は、さらに翌日へ進む
-					// ※当月内のループを想定（月をまたぐ特殊なケースは日本の祝日法上、GWでも発生しません）
 					while (holidayDays.contains(checkDate.getDayOfMonth())) {
 						checkDate = checkDate.plusDays(1);
 					}
 
-					// ループを抜けた日（＝祝日ではない最初の平日）が振替休日になる！
 					HolidayRule furikaeRule = new HolidayRule();
 					furikaeRule.setMonth(checkDate.getMonthValue());
 					furikaeRule.setDay(checkDate.getDayOfMonth());
 
-					// 重複して同じ日が振替休日にならないように、今回の判定用セットにも追加しておく
 					holidayDays.add(checkDate.getDayOfMonth());
 					furikaeHolidays.add(furikaeRule);
 				}
 			}
 		}
-		// 本物の祝日リストに、計算した振替休日を合流させる
 		holidayList.addAll(furikaeHolidays);
+		return holidayList;
+	}
 
-		// 2. 1ヶ月分の勤務実績リストを取得
-		List<AttendanceData> workTimeList = workTableService.getAttendanceList(shain.getShainId(), year, month);
+	/**
+	 * 指定された日付が「土曜日」「日曜日」または「祝日リスト」に含まれる休日であるかを判定します。
+	 *
+	 * @param date        判定対象の日付
+	 * @param holidayList 当月の祝日ルールリスト
+	 * @return 休日である場合は true、平日（労働日）である場合は false
+	 */
+	private boolean isHoliday(LocalDate date, List<HolidayRule> holidayList) {
+		int dayOfWeekNum = date.getDayOfWeek().getValue();
+		if (dayOfWeekNum == 6 || dayOfWeekNum == 7) {
+			return true;
+		}
+		return holidayList.stream()
+				.anyMatch(h -> h.getDay() != null && h.getDay() == date.getDayOfMonth());
+	}
 
-		// カウント・時間蓄積用の変数（分単位）
-		int weekdaysCount = 0; // 所定（平日）日数
-		int actualWorkDays = 0; // 実際の「平日」出勤日数 💡平日のみカウントに変更
-		int holidayWorkDays = 0; // ⭕【追加】実際の「土日祝」出勤日数
-		long totalBehindTime = 0; // 総遅刻（不足）時間
-		long totalOverMinutes = 0; // 総残業時間
-		long totalLateNightMinutes = 0; // 総深夜時間
-		long totalHolidayMinutes = 0; // 総休日労働時間
-		int paidHoliday = submission.getPaidHoliDay(); // 有給日数
+	/**
+	 * 1ヶ月分の勤務実績データを走査し、カレンダー上の所定日数、実際の出勤日数、および各種労働時間を集計します。
+	 * <p>
+	 * 備考欄が「有給」の場合は、平日出勤日数および有給加算の処理を行います。
+	 * </p>
+	 *
+	 * @param year                対象の年
+	 * @param month               対象の月
+	 * @param workTimeList        1ヶ月分の勤務データリスト
+	 * @param holidayList         当月の祝日ルールリスト
+	 * @param initialPaidHoliday 前画面などから引き継いだ初期状態の有給取得日数
+	 * @return 各種集計結果が保持された {@link AttendanceSummary} オブジェクト
+	 */
+	private AttendanceSummary aggregateAttendance(int year, int month, List<AttendanceData> workTimeList,
+			List<HolidayRule> holidayList, int initialPaidHoliday) {
+		AttendanceSummary summary = new AttendanceSummary();
+		summary.paidHoliday = initialPaidHoliday;
 
-		// 3. 1日ずつループして判定
 		for (AttendanceData workData : workTimeList) {
-
 			String note = workData.getNote() != null ? workData.getNote() : "";
 			int dayNum = Integer.parseInt(workData.getWorkDay().replaceAll("[^0-9]", ""));
 			LocalDate date = LocalDate.of(year, month, dayNum);
 
-			// --- 土日祝の判定 ---
-			boolean isHoliday = false;
-			int dayOfWeekNum = date.getDayOfWeek().getValue();
-			if (dayOfWeekNum == 6 || dayOfWeekNum == 7) {
-				isHoliday = true;
-			}
+			boolean isHoliday = isHoliday(date, holidayList);
+
 			if (!isHoliday) {
-				for (HolidayRule holiday : holidayList) {
-					if (holiday.getDay() != null && holiday.getDay() == dayNum) {
-						isHoliday = true;
-						break;
-					}
-				}
+				summary.weekdaysCount++;
 			}
 
-			// 💡 【仕様変更】平日の所定日数は、純粋にカレンダー上の平日のみをカウント
-			if (!isHoliday) {
-				weekdaysCount++;
-			}
-
-			// 有給の判定
 			if ("有給".equals(note)) {
-				paidHoliday++;
-				actualWorkDays++; // 有給は平日の出勤扱いに含める
+				summary.paidHoliday++;
+				summary.actualWorkDays++;
 				continue;
 			}
 
-			// 時間の取り出しと計算
 			if (workData.getStartTime() != null && workData.getEndTime() != null) {
-
 				String startStr = workData.getStartTime().toString().replaceAll("[^0-9]", "");
 				String endStr = workData.getEndTime().toString().replaceAll("[^0-9]", "");
 
@@ -129,112 +194,106 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 					continue;
 				}
 
-				// 💡 【仕様変更】出勤日数のカウントを平日と休日で分ける
 				if (!isHoliday) {
-					actualWorkDays++; // 平日の出勤日数
+					summary.actualWorkDays++;
 				} else {
-					holidayWorkDays++; // 土日祝の出勤日数
+					summary.holidayWorkDays++;
 				}
 
-				int startHour = Integer.parseInt(startStr.substring(0, 2));
-				int startMin = Integer.parseInt(startStr.substring(2, 4));
-				int endHour = Integer.parseInt(endStr.substring(0, 2));
-				int endMin = Integer.parseInt(endStr.substring(2, 4));
-
-				int startTotalMinutes = startHour * 60 + startMin;
-				int endTotalMinutes = endHour * 60 + endMin;
-
-				int restMinutes = 60;
-				int currentPassedWorkMinutes = 0;
-
-				for (int m = startTotalMinutes; m < endTotalMinutes; m++) {
-					if (m < startTotalMinutes + restMinutes) {
-						continue;
-					}
-
-					currentPassedWorkMinutes++;
-
-					boolean isOverTime = currentPassedWorkMinutes > 480;
-					boolean isNightTime = (m >= 22 * 60 && m < 29 * 60) || (m >= 46 * 60 && m < 53 * 60);
-
-					if (isHoliday) {
-						totalHolidayMinutes++;
-					}
-					if (isOverTime) {
-						totalOverMinutes++;
-					}
-					if (isNightTime) {
-						totalLateNightMinutes++;
-					}
-				}
-
-				if (!isHoliday && currentPassedWorkMinutes < 480) {
-					totalBehindTime += (480 - currentPassedWorkMinutes);
-				}
+				// 時間計算（1分単位のループ処理）
+				calculateDailyMinutes(startStr, endStr, isHoliday, summary);
 			}
 		}
+		return summary;
+	}
 
-		/**
-		 * 4. 給与計算
-		 */
-		Map<String, Object> rate = shainDataMapper.selectSalaryById(shain.getShainId());
+	/**
+	 * 出退勤時刻から、1日における休憩時間を除いた分単位の労働時間をループ処理で走査し、各種手当対象時間を累積します。
+	 * <p>
+	 * 集計対象には「残業時間（実働8時間超）」「深夜時間（22時-翌5時、46時-48時）」「休日労働時間」「不足（遅刻）時間」が含まれます。
+	 * </p>
+	 *
+	 * @param startStr  数字のみに整形された出勤時刻文字列 (例: "0900")
+	 * @param endStr    数字のみに整形された退勤時刻文字列 (例: "1800")
+	 * @param isHoliday 該当レコードが休日であるかどうかのフラグ
+	 * @param summary   集計時間を蓄積するためのサマリーオブジェクト
+	 */
+	private void calculateDailyMinutes(String startStr, String endStr, boolean isHoliday, AttendanceSummary summary) {
+		int startHour = Integer.parseInt(startStr.substring(0, 2));
+		int startMin = Integer.parseInt(startStr.substring(2, 4));
+		int endHour = Integer.parseInt(endStr.substring(0, 2));
+		int endMin = Integer.parseInt(endStr.substring(2, 4));
+
+		int startTotalMinutes = startHour * 60 + startMin;
+		int endTotalMinutes = endHour * 60 + endMin;
+		int restMinutes = 60;
+		int currentPassedWorkMinutes = 0;
+
+		for (int m = startTotalMinutes; m < endTotalMinutes; m++) {
+			if (m < startTotalMinutes + restMinutes) {
+				continue;
+			}
+			currentPassedWorkMinutes++;
+
+			boolean isOverTime = currentPassedWorkMinutes > 480;
+			boolean isNightTime = (m > 0 && m < 5 * 60) || (m >= 22 * 60 && m < 29 * 60)
+					|| (m >= 46 * 60 && m < 48 * 60);
+
+			if (isHoliday)
+				summary.totalHolidayMinutes++;
+			if (isOverTime)
+				summary.totalOverMinutes++;
+			if (isNightTime)
+				summary.totalLateNightMinutes++;
+		}
+
+		if (!isHoliday && currentPassedWorkMinutes < 480) {
+			summary.totalBehindTime += (480 - currentPassedWorkMinutes);
+		}
+	}
+
+	/**
+	 * 社員の給与マスター設定および算出した各種集計時間に基づき、当月の最終支給総額（四捨五入）を計算します。
+	 * <p>
+	 * 計算には基本給、欠勤控除、時間外手当、深夜割増手当、休日出勤手当、および遅刻ペナルティの相殺が含まれます。
+	 * </p>
+	 *
+	 * @param shainId 対象社員のユニークID
+	 * @param summary 1ヶ月分の勤務集計データ
+	 * @return 計算後の総支給額（円単位）
+	 */
+	private int calculateTotalSalary(int shainId, AttendanceSummary summary) {
+		Map<String, Object> rate = shainDataMapper.selectSalaryById(shainId);
 		int baseSalary = ((Number) rate.get("base_salary")).intValue();
 		int timeCost = ((Number) rate.get("time_cost")).intValue();
-		//時間外労働分の時給（手当は含んでいない）
 		double timeSalary = 0;
 
-		// 💡 ① 【平日分だけで基本給の判定を行う】
-		// 純粋な平日の所定日数と、平日の出勤日数を比較して欠勤控除を計算
-		if (weekdaysCount > actualWorkDays) {
-			baseSalary = baseSalary - ((weekdaysCount - actualWorkDays) * 8 * timeCost);
+		// 欠勤控除
+		if (summary.weekdaysCount > summary.actualWorkDays) {
+			baseSalary -= ((summary.weekdaysCount - summary.actualWorkDays) * 8 * timeCost);
 		}
 
 		double overRate = ((Number) rate.get("over_time_bonus")).doubleValue();
 		double nightRate = ((Number) rate.get("late_night_bonus")).doubleValue();
 		double holidayRate = ((Number) rate.get("holiday_bonus")).doubleValue();
 
-		// 💡 ③ 【休みの日の給料は手当含め時給ですべて計算】
-		// 基本給(baseSalary)には土日祝の等倍分すら入っていないため、
-		// 休日労働時間に対して「時給 × 休日割増率（例: 1.35）」を丸ごと掛け算して支給します。
-		double holidayWorkSalary = (totalHolidayMinutes / 60.0) * timeCost * holidayRate;
+		// 休日手当
+		double holidayWorkSalary = (summary.totalHolidayMinutes / 60.0) * timeCost * holidayRate;
 
-		//土日の場合は時給計算されているため下記の計算は省く
 		if (holidayWorkSalary == 0) {
-
-			// 時間外労働の時給計算（残業・深夜時間が長い物をベースに時給を算出）
-			if (totalOverMinutes > totalLateNightMinutes) {
-				timeSalary = (totalOverMinutes / 60.0) * timeCost;
-			} else if (totalLateNightMinutes <= totalOverMinutes) {
-				timeSalary = (totalLateNightMinutes / 60.0) * timeCost;
+			if (summary.totalOverMinutes > summary.totalLateNightMinutes) {
+				timeSalary = (summary.totalOverMinutes / 60.0) * timeCost;
+			} else {
+				timeSalary = (summary.totalLateNightMinutes / 60.0) * timeCost;
 			}
 		}
-		//残業手当・深夜手当の算出
 
-		double overTimeSalary = (totalOverMinutes / 60.0) * timeCost * (overRate - 1.0);
+		double overTimeSalary = (summary.totalOverMinutes / 60.0) * timeCost * (overRate - 1.0);
+		double lateNightSalary = (summary.totalLateNightMinutes / 60.0) * timeCost * (nightRate - 1.0);
+		double behindTimePenalty = (summary.totalBehindTime / 60.0) * timeCost;
 
-		double lateNightSalary = (totalLateNightMinutes / 60.0) * timeCost * (nightRate - 1.0);
-
-		// ④ 遅刻ペナルティ
-		double behindTimePenalty = (totalBehindTime / 60.0) * timeCost;
-
-		// 【総給与の算出】
-		int totalSalary = (int) Math.round(
+		return (int) Math.round(
 				baseSalary + timeSalary + overTimeSalary + lateNightSalary + holidayWorkSalary - behindTimePenalty);
-
-		System.out.println(overTimeSalary);
-		System.out.println(lateNightSalary);
-		System.out.println(holidayWorkSalary);
-		System.out.println(behindTimePenalty);
-		System.out.println(totalSalary);
-		System.out.println(timeSalary);
-
-		// 各種計算結果を DTO にセット
-		submission.setMustDay(weekdaysCount); // 平日の所定日数
-
-		// 画面に返す出勤日数は、「平日の出勤日数 ＋ 土日祝の出勤日数」の合計値にする
-		submission.setAttendanceDay(actualWorkDays + holidayWorkDays);
-
-		submission.setPaidHoliDay(paidHoliday);
-		submission.setSalary(totalSalary);
 	}
+
 }

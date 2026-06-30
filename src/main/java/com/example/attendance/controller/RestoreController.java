@@ -1,7 +1,5 @@
 package com.example.attendance.controller;
 
-import java.util.Collections;
-
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,85 +18,101 @@ import com.example.attendance.service.RestoreService;
 import com.example.attendance.util.LogUtil;
 
 /**
- * /attendance/management/restoreのコントローラ
- * @author kato
+ * ロック（停止）された社員アカウントの復旧処理に関する画面制御を行うコントローラークラス。
+ * * @author kato
  */
 @Controller
 public class RestoreController {
 
-	/**サービスクラス*/
+	/** アカウント復旧のビジネスロジックを提供するサービスクラス */
 	@Autowired
 	private RestoreService restoreService;
 
 	/**
-	 * /attendance/management/restoreの描写
-	 * @param restoreRequest 画面の入力
-	 * @param session "loginShain"に値が存在する(管理者のShainDataであることが期待される)
-	 * @param redirect
-	 * @return /attendance/management/restore
+	 * 社員復旧画面の初期表示を行います。
+	 * <p>
+	 * セッションをチェックし、管理者としてログイン状態であることを確認した上で画面を描画します。
+	 * セッションが切れている場合はログイン画面へリダイレクトします。
+	 * </p>
+	 *
+	 * @param restoreRequest 画面のフォームデータを格納するDTOオブジェクト
+	 * @param session        管理者セッションの有無を確認するためのHTTPセッション
+	 * @param redirect       リダイレクト先へフラッシュ属性を渡すためのオブジェクト
+	 * @return 社員復旧画面のHTMLパス、またはログイン画面へのリダイレクト指示
 	 */
 	@GetMapping("/attendance/management/restore")
-	public String display(@ModelAttribute RestoreRequest restoreRequest, HttpSession session,
+	public String display(@ModelAttribute("restoreRequest") RestoreRequest restoreRequest, HttpSession session,
 			RedirectAttributes redirect) {
-		//sessionの確認
-		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
-				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認
-		if (!isKeepingSession) {
+
+		// セッションの生存確認（loginShain の存在チェック）
+		if (session == null || session.getAttribute("loginShain") == null) {
 			LogUtil.warn("W99999");
 			redirect.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
-			return "redirect:/attendance/management/login"; // 最初のページへ
+			return "redirect:/attendance/management/login";
 		}
-		return "/attendance/management/restore";
+
+		return "attendance/management/restore";
 	}
 
 	/**
-	 * HTML側で入力された社員IDに該当するアカウントのロックを解除して、勤務表画面へ移行する。<br>
-	 * 入力値が不正だった場合やDB更新が正常になされなかった場合は、ページ遷移せずエラー文を表示する。
-	 * @param request 社員IDの入ったdto
-	 * @param result バリデーションの結果
-	 * @param session "loginShain"に値が存在する(管理者のShainDataであることが期待される)
-	 * @param model DB更新が正常に終わらなかった場合、"errorMessage"にメッセージが入る
-	 * @param redirect 
-	 * @return 成功した場合/attendance/management/worktableへのリダイレクト
+	 * 画面から入力された社員IDを基に、該当アカウントのロック解除（復旧）処理を実行します。
+	 * <p>
+	 * バリデーションチェック、存在確認を行い、問題がなければアカウントを有効化して勤務表画面へリダイレクトします。
+	 * 不備がある場合は同画面にエラーメッセージを表示します。
+	 * </p>
+	 *
+	 * @param request        画面から送信された社員IDを含むDTOオブジェクト
+	 * @param result         入力チェックの検証結果を保持するオブジェクト
+	 * @param session        セッションの生存確認を行うためのHTTPセッション
+	 * @param model          画面へエラーメッセージを渡すためのModelオブジェクト
+	 * @param redirect       リダイレクト時の制御用オブジェクト
+	 * @return 処理成功時は勤務表画面へのリダイレクト、失敗時は社員復旧画面のHTMLパス
 	 */
-	@PostMapping("/attendance/management/restore")
-	public String restoreAndRedirect(@ModelAttribute @Validated RestoreRequest request, BindingResult result,
+	@PostMapping(value = "/attendance/management/restore")
+	public String restoreAndRedirect(@ModelAttribute("restoreRequest") @Validated RestoreRequest request,
+			BindingResult result,
 			HttpSession session, Model model, RedirectAttributes redirect) {
-		//sessionの確認(再度)
-		boolean isKeepingSession = Collections.list(session.getAttributeNames()) //sessionに保存されている中身の名前をlistに
-				.stream().anyMatch(x -> "loginShain".equals(x)); //streamで"loginShain"の存在を確認
-		if (!isKeepingSession) {
+
+		// セッションの再確認
+		if (session == null || session.getAttribute("loginShain") == null) {
 			LogUtil.warn("W99999");
-
 			redirect.addFlashAttribute("errorMessage", "セッションの有効期限が切れました。再度ログインしてください。");
-
-			return "redirect:/attendance/management/login"; // 最初のページへ
+			return "redirect:/attendance/management/login";
 		}
 
-		//バリデーションチェック
+		// 単体バリデーションチェック（@NotNull, @Positive）
 		if (result.hasErrors()) {
-			//バリデーションに引っかかった場合
+			// 💡安全になった getErrorCode メソッドを呼び出して警告ログを出力
 			result.getFieldErrors().forEach(x -> LogUtil.warn(RestoreRequest.getErrorCode(x.getCode())));
 			return "attendance/management/restore";
 		}
 
-		//DBの更新
+		// サービス層の復旧主処理を呼び出し
 		try {
 			if (!restoreService.executeRestoreShain(request.getShainId())) {
-				//データ更新が正常になされなかった場合はエラーを表示
-				model.addAttribute("errorMessage", "入力した社員IDに該当するロックされたアカウントは存在しません。"); //W40003のメッセージ本文
+				// 対象の社員IDが存在しない、またはロックされていない場合
+				model.addAttribute("errorMessage", "入力した社員IDに該当するロックされたアカウントは存在しません。");
 				LogUtil.warn("W40003");
 				return "attendance/management/restore";
 			}
 		} catch (DataAccessException e) {
-			//DBアクセスに失敗した場合もエラーを表示
+			// データベース通信トラブル等の例外発生時
 			model.addAttribute("errorMessage", "DB接続時にエラーが発生しました。時間を空けて再度実行してください。");
 			LogUtil.error("E10001");
 			return "attendance/management/restore";
 		}
 
 		LogUtil.info("[{}]:Restore success(shain_id = {})", this.getClass().getSimpleName(), request.getShainId());
-		//勤務表画面へリダイレクト
+		return "redirect:/attendance/management/worktable";
+	}
+
+	/**
+	 * 復旧処理を行わずに、現在の勤務表（管理テーブル）画面へ戻る遷移を制御します。
+	 *
+	 * @return 勤務表画面へのリダイレクト指示
+	 */
+	@PostMapping(value = "/attendance/management/back_table")
+	public String backToTable() {
 		return "redirect:/attendance/management/worktable";
 	}
 }
